@@ -3,7 +3,6 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import userRouter from "./routes/auth-route";
-import projectRouter from "./routes/projects-route";
 dotenv.config();
 
 const app = express();
@@ -22,7 +21,6 @@ app.use(
 
 // Mount user router
 app.use("/api/auth", userRouter);
-app.use("/api/projects", projectRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World");

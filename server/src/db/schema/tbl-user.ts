@@ -1,9 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import { pgTable, serial, text, varchar, boolean, json, timestamp } from "drizzle-orm/pg-core";
-import { projectTable } from "./tbl-project";
-import { projectLikeTable } from "./tbl-like";
-import { projectCommentTable } from "./tbl-comment";
-import { favouriteProjectTable } from "./tbl-favourite";
+
 
 export const userTable = pgTable("tbl_user", {
   userId: text("user_id").notNull().primaryKey(),
@@ -23,10 +20,3 @@ export const userTable = pgTable("tbl_user", {
           .$onUpdate(() => new Date()),
 });
 
-export const userRelations = relations(userTable, ({ many }) => ({
-    projects: many(projectTable),
-    projectLikes: many(projectLikeTable),
-    projectComments: many(projectCommentTable),
-    favouriteProjects: many(favouriteProjectTable),
-  }));
-  
