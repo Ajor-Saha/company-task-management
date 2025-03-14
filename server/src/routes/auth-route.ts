@@ -3,13 +3,13 @@ import { login, logout, signup, verifyEmail } from '../controllers/auth-controll
 import { verifyJWT } from '../middleware/auth-middleware';
 
 
-const router = Router();
+const user_router = Router();
 
 
-router.route('/signup').post(signup);
-router.route("/signin").post(login);
-router.route("/signout").post(verifyJWT, logout);
-router.route('/email-verification').post(verifyEmail);
+user_router.route('/signup').post(signup);
+user_router.route("/signin").post(login);
+user_router.route("/signout").post(verifyJWT, logout);
+user_router.route('/email-verification').post(verifyEmail);
 
 
-export default router; 
+export default user_router; 

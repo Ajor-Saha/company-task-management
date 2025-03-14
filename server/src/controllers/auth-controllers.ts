@@ -4,7 +4,7 @@ import { db } from "../db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { ApiResponse } from "../utils/api-response";
-import { userTable } from "../db/schema/tbl-user";
+import { roleEnum, userTable } from "../db/schema/tbl-user";
 import { sendVerificationEmail } from "../utils/send-verification-email";
 import { generateVerificationCode } from "../utils/generate-verification-code";
 import { generateExpiryDate } from "../utils/generate-verification-code";
@@ -14,11 +14,11 @@ import { asyncHandler } from "../utils/asyncHandler";
 export const signup = asyncHandler(
   async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, companyId } = req.body;
 
     // Validate required fields
     if (
-      [firstName, lastName, email, password].some(
+      [firstName, lastName, email, password, companyId].some(
         (field) => !field || field.trim() === ""
       )
     ) {
@@ -90,9 +90,11 @@ export const signup = asyncHandler(
       lastName,
       email,
       password: hashedPassword,
+      companyId,
       verifyCode,
       verifyCodeExpiry,
       isVerified: false,
+      role: "admin" as const,
     };
 
     await db.insert(userTable).values(newUser);
@@ -124,6 +126,8 @@ export const signup = asyncHandler(
     res.status(500).json(new ApiResponse(500, null, "Internal server error"));
   }
 });
+
+
 
 
 
@@ -209,7 +213,7 @@ export const logout = asyncHandler(
   }
 });
 
-export const verifyEmail = async (req: Request, res: Response) => {
+export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
     const decodedEmail = decodeURIComponent(email);
@@ -221,13 +225,28 @@ export const verifyEmail = async (req: Request, res: Response) => {
       .where(eq(userTable.email, decodedEmail));
 
     if (user.length === 0) {
-      res.status(404).json(new ApiResponse(404, {}, "User not found"));
+      return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
 
     const existingUser = user[0];
+
+    // Check if the verification code and expiry are valid
     const isCodeValid = existingUser.verifyCode === code;
-    const isCodeNotExpired =
-      new Date(existingUser.verifyCodeExpiry) > new Date();
+
+    // Handle null verifyCodeExpiry
+    if (!existingUser.verifyCodeExpiry) {
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            {},
+            "Verification code has expired. Please sign up again to get a new code."
+          )
+        );
+    }
+
+    const isCodeNotExpired = new Date(existingUser.verifyCodeExpiry) > new Date();
 
     if (isCodeValid && isCodeNotExpired) {
       // Update user's verification status
@@ -236,11 +255,11 @@ export const verifyEmail = async (req: Request, res: Response) => {
         .set({ isVerified: true })
         .where(eq(userTable.email, decodedEmail));
 
-      res
+      return res
         .status(200)
         .json(new ApiResponse(200, {}, "Account verified successfully"));
     } else if (!isCodeNotExpired) {
-      res
+      return res
         .status(400)
         .json(
           new ApiResponse(
@@ -250,12 +269,12 @@ export const verifyEmail = async (req: Request, res: Response) => {
           )
         );
     } else {
-      res
+      return res
         .status(400)
         .json(new ApiResponse(400, {}, "Incorrect verification code"));
     }
   } catch (error) {
     console.error("Error verifying user:", error);
-    res.status(500).json(new ApiResponse(500, {}, "Error verifying user"));
+    return res.status(500).json(new ApiResponse(500, {}, "Error verifying user"));
   }
-};
+});

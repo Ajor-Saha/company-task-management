@@ -1,22 +1,39 @@
 import { relations, sql } from "drizzle-orm";
-import { pgTable, serial, text, varchar, boolean, json, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  varchar,
+  boolean,
+  timestamp,
+  pgEnum,
+} from "drizzle-orm/pg-core";
+import { companyTable } from "./tbl-company";
 
+export const roleEnum = pgEnum("role", [
+  "admin",
+  "senior_employee",
+  "assigned_employee",
+]);
 
 export const userTable = pgTable("tbl_user", {
   userId: text("user_id").notNull().primaryKey(),
   firstName: varchar("first_name", { length: 255 }).notNull(),
-  lastName: varchar("last_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
-  bio: text("bio"),
-  password: text("password").notNull(), // Text type for the password field
-  avatar: text("avatar"), // Optional avatar field
-  socialLinks: json("social_links"), // JSON data type for social links
-  verifyCode: text("verify_code").notNull(),
-  verifyCodeExpiry: timestamp("verify_code_expiry").notNull(),
-  isVerified: boolean("is_verified").default(false), // Boolean type for verification status
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-      updatedAt: timestamp('updated_at')
-          .default(sql`current_timestamp`)
-          .$onUpdate(() => new Date()),
+  password: text("password").notNull(),
+  avatar: text("avatar"),
+  role: roleEnum("role").notNull(),
+  verifyCode: text("verify_code"),
+  verifyCodeExpiry: timestamp("verify_code_expiry"),
+  isVerified: boolean("is_verified").default(false),
+  companyId: text("company_id").references(() => companyTable.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").default(sql`current_timestamp`).$onUpdate(() => new Date()),
 });
 
+export const usersRelations = relations(userTable, ({ one }) => ({
+  company: one(companyTable, {
+    fields: [userTable.companyId],
+    references: [companyTable.id],
+  }),
+}));

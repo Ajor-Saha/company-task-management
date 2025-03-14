@@ -2,7 +2,8 @@ import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import userRouter from "./routes/auth-route";
+import company_router from "./routes/company-route";
+import user_router from "./routes/auth-route";
 dotenv.config();
 
 const app = express();
@@ -20,11 +21,14 @@ app.use(
 );
 
 // Mount user router
-app.use("/api/auth", userRouter);
+app.use("/api/auth", user_router);
+app.use("/api/company", company_router);
 
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
+
+
 
 // error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
