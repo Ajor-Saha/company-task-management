@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Button } from "../ui/button";
 import Link from "next/link";
+import useAuthStore from "@/store/store";
 
 
 function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const currentUser = useAuthStore().user;
   
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -35,9 +37,15 @@ function Header() {
 
         {/* Right Side: Login (md+) & Theme Toggle */}
         <div className="flex items-center space-x-4">
-          <Button className="hidden md:block rounded-full md:px-6 lg:px-8 xl:px-10">
-              <Link href="/sign-in">Login</Link>
-         </Button>
+         {currentUser ? (
+            <Button className="hidden md:block rounded-full md:px-6 lg:px-8 xl:px-10">
+            <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <Button className="hidden md:block rounded-full md:px-6 lg:px-8 xl:px-10">
+            <Link href="/sign-in">Login</Link>
+            </Button>
+          )}
 
           {/* Mobile Menu Button */}
           <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
@@ -62,9 +70,15 @@ function Header() {
             Contact
           </a>
           
-            <button className="w-full mt-2 px-4 py-2 dark:bg-gray-600 dark:hover:bg-gray-700 bg-gray-800 hover:bg-gray-900 text-white rounded-md">
-                <Link href="/create-new-company">Register</Link>
-            </button>
+          {currentUser ? (
+            <Button className="md:hidden w-full rounded-full md:px-6 lg:px-8 xl:px-10">
+            <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <Button className="md:hidden w-full rounded-full md:px-6 lg:px-8 xl:px-10">
+            <Link href="/sign-in">Login</Link>
+            </Button>
+          )}
           
         </div>
       )}

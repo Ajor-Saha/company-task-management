@@ -25,10 +25,12 @@ import {
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { Axios } from "@/config/axios";
+import useAuthStore from "@/store/store";
 
 export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const login = useAuthStore((state) => state.login);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -46,6 +48,9 @@ export default function LoginPage() {
         data
       );
       toast.success(response.data.message || "Login Successful");
+      console.log("Login Successful:", response.data);
+      login(response.data.data, response.data.accessToken);
+      
       router.push("/dashboard"); // Redirect to the dashboard after login
     } catch (error) {
       console.error("Login Error:", error);
@@ -154,9 +159,11 @@ export default function LoginPage() {
               </div>
 
               <div className="relative hidden bg-muted md:block">
-                <img
+                <Image
                   src="/asset/signup-pic.svg"
                   alt="Image"
+                  width={1000}
+                  height={800}
                   className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
                 />
               </div>

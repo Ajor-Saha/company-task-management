@@ -1,132 +1,90 @@
-'use client'
+"use client";
 
-import { REGEXP_ONLY_DIGITS } from "input-otp";
-
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ApiResponse } from "@/types/api-success-type";
-import { AxiosError } from "axios";
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Hexagon } from "lucide-react";
-import { verifySchema } from "@/schemas/auth-schema";
-import { Axios } from "@/config/axios";
+import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
+import { Axios } from "@/config/axios";
+import { AxiosError } from "axios";
+import { z } from "zod";
+
+// Define OTP validation schema
+const otpSchema = z.object({
+  code: z.string().length(6, "OTP must be exactly 6 digits"),
+});
 
 const OTPVerification = () => {
   const router = useRouter();
   const params = useParams<{ email: string }>();
 
-  const form = useForm<z.infer<typeof verifySchema>>({
-    resolver: zodResolver(verifySchema),
-    mode: "onChange",
-    defaultValues: {
-      email: params.email,
-      code: "",
-    },
-  });
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [otpValue, setOtpValue] = useState("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
 
-  const handleOtpChange = (value: string) => {
-    setOtpValue(value);
-    form.setValue("code", value);
-  };
+    // Validate OTP with Zod
+    const validationResult = otpSchema.safeParse({ code: otp });
+    if (!validationResult.success) {
+      setError(validationResult.error.errors[0].message);
+      return;
+    }
 
-  const onSubmit = async (data: z.infer<typeof verifySchema>) => {
     setLoading(true);
     try {
       const response = await Axios.post(`/api/auth/email-verification`, {
         email: params.email,
-        code: data.code,
+        code: otp,
       });
 
       toast.success(response.data.message || "Account verified successfully.");
-
       router.push("/sign-in");
     } catch (error) {
-      console.error("Error during sign-up:", error);
-      const axiosError = error as AxiosError<ApiResponse>;
-      const errorMessage =
-        axiosError.response?.data.message ??
-        "There was a problem with your sign-up. Please try again.";
+      console.error("Error during verification:", error);
+      const axiosError = error as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data.message ?? "Verification failed. Try again.";
       toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  
-  
-
   return (
-    <div className="flex justify-center pt-52 min-h-screen">
-      <div className="flex flex-col justify-center items-center h-full ">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <div className="flex justify-center mb-4">
-              <div className="bg-primary p-3 rounded-xl dark:bg-primary-dark">
-                <Hexagon className="w-6 h-6 text-primary-foreground dark:text-primary-dark-foreground" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold text-center dark:text-white">
-              Verify Your Account
-            </CardTitle>
-            <CardDescription className="text-center dark:text-gray-300">
-              Enter the 6-digit code sent to your email
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="flex flex-col justify-center items-center">
-                <label htmlFor="code" className="block font-semibold text-lg">
-                  Enter OTP
-                </label>
-                <InputOTP
-                  maxLength={6}
-                  pattern={REGEXP_ONLY_DIGITS}
-                  value={otpValue}
-                  onChange={handleOtpChange}
-                >
-                  <InputOTPGroup>
-                    {[...Array(6)].map((_, index) => (
-                      <InputOTPSlot key={index} index={index} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-                {form.formState.errors.code && (
-                  <p className="text-red-600">
-                    {form.formState.errors.code.message}
-                  </p>
-                )}
-              </div>
-              <div className="flex justify-center">
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="px-2"
-                >
-                  {loading ? "Verifying..." : "Verify OTP"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center text-gray-800">Verify Your Account</h2>
+        <p className="text-center text-gray-600 mb-4">Enter the 6-digit code sent to your email</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* OTP Input */}
+          <div>
+            <label htmlFor="otp" className="block text-gray-700 font-medium mb-1">
+              Enter OTP
+            </label>
+            <input
+              type="text"
+              id="otp"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+            {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full bg-blue-500 text-white py-2 rounded-md font-semibold transition-all ${
+              loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+            }`}
+          >
+            {loading ? "Verifying..." : "Verify OTP"}
+          </button>
+        </form>
       </div>
     </div>
   );
