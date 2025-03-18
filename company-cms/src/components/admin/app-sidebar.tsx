@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import * as React from "react"
-import { GalleryVerticalEnd, Minus, Plus } from "lucide-react"
+import * as React from "react";
+import { GalleryVerticalEnd, Minus, Plus } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -20,69 +20,57 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 import { NavUser } from "./nav-user";
-import { useRouter } from "next/navigation";
-import useAuthStore from "@/store/store"
-import { Axios } from "@/config/axios"
-import { env } from "@/config/env"
+import { usePathname, useRouter } from "next/navigation";
+import useAuthStore from "@/store/store";
+import { Axios } from "@/config/axios";
+import { env } from "@/config/env";
+import Link from "next/link";
 
-// Add before the sidebarData
-interface SidebarItem {
-  title: string;
-  url: string;
-  isActive?: boolean;
-  items?: SidebarItem[];
-}
-
-const sidebarData: { navMain: SidebarItem[] } = {
+// Sidebar Data
+const sidebarData = {
   navMain: [
+    
     {
-      title: "Dashboard",
-      url: "/dashboard",
+      title: "Project",
+      url: "#",
+      items: [
+        { title: "Add Project", url: "/project/add-project" },
+        { title: "Manage Project", url: "/project/manage-project" },
+      ],
     },
     {
       title: "Settings",
       url: "#",
       items: [
-        {
-          title: "Account",
-          url: "/settings/account-manage",
-        },
-        {
-          title: "User Management",
-          url: "/settings/user-manage",
-        },
+        { title: "Account", url: "/settings/account-manage" },
+        { title: "Company Manage", url: "/settings/company-manage" },
       ],
     },
-    
   ],
 };
 
-
-  
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuthStore();
+  const router = useRouter();
+  const pathname = usePathname(); // Get the current page path
 
-    const { user, logout } = useAuthStore();
-    const router = useRouter();
-    
-  
-    const handleLogout = async () => {
-      try {
-        const response = await Axios.post(
-          `${env.BACKEND_BASE_URL}/api/auth/signout`
-        );
-        if (response.data.success) {
-          logout();
-          router.push("/sign-in");
-        } else {
-          throw new Error("Failed to sign out");
-        }
-      } catch (error) {
-        console.log(error);
+  const handleSignOut = async () => {
+    try {
+      const response = await Axios.post(
+        `${env.BACKEND_BASE_URL}/api/auth/signout`
+      );
+      if (response.data.success) {
+        logout();
+        router.push("/sign-in");
+      } else {
+        throw new Error("Failed to sign out");
       }
-    };
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <Sidebar {...props}>
@@ -95,40 +83,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <GalleryVerticalEnd className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Hostel Haven</span>
+                  <span className="font-semibold">Company Cms</span>
                 </div>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
+        <SidebarGroup>
+          <Link href="/dashboard" className="text-sm px-2 bg-slate-100 py-2 hover:bg-slate-300 dark:bg-gray-900 dark:hover:bg-gray-700">Dashboard</Link>
+        </SidebarGroup>
         <SidebarGroup>
           <SidebarMenu>
             {sidebarData.navMain.map((item, index) => (
               <Collapsible
                 key={item.title}
-                defaultOpen={index === 1}
+                defaultOpen={pathname.startsWith(item.url)}
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
-                      {item.title}{" "}
+                      {item.title}
                       <Plus className="ml-auto group-data-[state=open]/collapsible:hidden" />
                       <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
+
                   {item.items?.length ? (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {item.items.map((item) => (
-                          <SidebarMenuSubItem key={item.title}>
+                        {item.items.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton
                               asChild
-                              isActive={item.isActive}
+                              isActive={pathname === subItem.url}
                             >
-                              <a href={item.url}>{item.title}</a>
+                              <a href={subItem.url}>{subItem.title}</a>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -141,19 +134,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter>
-        <NavUser 
+        <NavUser
           user={{
-            name: session?.user?.name || null,
-            email: session?.user?.email || null,
-            avatar: session?.user?.image || undefined,
-          }} 
+            name: user?.firstName || null,
+            email: user?.email || null,
+            avatar: user?.avatar || undefined,
+          }}
           onSignOut={handleSignOut}
         />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
-
-
