@@ -1,24 +1,24 @@
-'use client'
+"use client"
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import axios, { AxiosError } from "axios";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { createCompanySchema } from "@/schemas/company-schema";
-import { useRouter } from "next/navigation";
-import { env } from "@/config/env";
-import { ApiResponse } from "@/types/api-success-type";
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import type { z } from "zod"
+import axios, { type AxiosError } from "axios"
+import { useState } from "react"
+import { toast } from "sonner"
+import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import { createCompanySchema } from "@/schemas/company-schema"
+import { useRouter } from "next/navigation"
+import { env } from "@/config/env"
+import type { ApiResponse } from "@/types/api-success-type"
 
 function CreateCompanyPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [company, setCompany] = useState({});
-  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [company, setCompany] = useState({})
+  const router = useRouter()
 
   const form = useForm<z.infer<typeof createCompanySchema>>({
     resolver: zodResolver(createCompanySchema),
@@ -33,48 +33,48 @@ function CreateCompanyPage() {
         country: "",
       },
     },
-  });
+  })
 
   const onSubmit = async (data: z.infer<typeof createCompanySchema>) => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
-      const response = await axios.post(
-        `${env.BACKEND_BASE_URL}/api/company/add-new-company`, 
-        data
-      );
-      toast.success(response.data.message || "Company created successfully!");
-      const company = response.data.data;
+      const response = await axios.post(`${env.BACKEND_BASE_URL}/api/company/add-new-company`, data)
+      toast.success(response.data.message || "Company created successfully!")
+      const company = response.data.data
       if (response.data.success) {
-        setCompany(company);
-        router.push(`/signup/${company.id}`);
+        setCompany(company)
+        router.push(`/signup/${company.id}`)
       }
     } catch (error) {
-      console.error("Error during company creation:", error);
-      const axiosError = error as AxiosError<ApiResponse>;
+      console.error("Error during company creation:", error)
+      const axiosError = error as AxiosError<ApiResponse>
       const errorMessage =
-        axiosError.response?.data.message ??
-        "There was a problem creating your company. Please try again.";
-      toast.error(errorMessage);
+        axiosError.response?.data.message ?? "There was a problem creating your company. Please try again."
+      toast.error(errorMessage)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen dark:bg-gray-500 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-4xl p-8  rounded-lg shadow-xl">
-        <h2 className="text-2xl font-bold text-white mb-8">Create a Company</h2>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 flex flex-col items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-4xl p-8 bg-white/80 dark:bg-slate-700/40 backdrop-blur-sm rounded-3xl shadow-xl border border-purple-100 dark:border-slate-600">
+        <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-300 mb-8 text-center">Create a Company</h2>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               name="name"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Name</FormLabel>
-                  <Input {...field} placeholder="Enter company name" />
-                  <FormMessage />
+                <FormItem className="transition-all duration-200 hover:translate-y-[-2px]">
+                  <FormLabel className="text-purple-600 dark:text-purple-300 font-medium">Company Name</FormLabel>
+                  <Input
+                    {...field}
+                    placeholder="Enter company name"
+                    className="rounded-xl py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                  />
+                  <FormMessage className="text-pink-500" />
                 </FormItem>
               )}
             />
@@ -83,80 +83,114 @@ function CreateCompanyPage() {
               name="category"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Input {...field} placeholder="Enter company category" />
-                  <FormMessage />
+                <FormItem className="transition-all duration-200 hover:translate-y-[-2px]">
+                  <FormLabel className="text-purple-600 dark:text-purple-300 font-medium">Category</FormLabel>
+                  <Input
+                    {...field}
+                    placeholder="Enter company category"
+                    className="rounded-xl py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                  />
+                  <FormMessage className="text-pink-500" />
                 </FormItem>
               )}
             />
 
-            <h3 className="text-lg font-semibold text-white">Address</h3>
+            <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-300 mt-8 mb-4 pb-2 border-b border-purple-100 dark:border-slate-600">
+              Address Information
+            </h3>
 
             <FormField
               name="address.street"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Street Address</FormLabel>
-                  <Input {...field} placeholder="Enter street address" />
-                  <FormMessage />
+                <FormItem className="transition-all duration-200 hover:translate-y-[-2px]">
+                  <FormLabel className="text-purple-600 dark:text-purple-300 font-medium">Street Address</FormLabel>
+                  <Input
+                    {...field}
+                    placeholder="Enter street address"
+                    className="rounded-xl py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                  />
+                  <FormMessage className="text-pink-500" />
                 </FormItem>
               )}
             />
 
-            <FormField
-              name="address.city"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <Input {...field} placeholder="Enter city" />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                name="address.city"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="transition-all duration-200 hover:translate-y-[-2px]">
+                    <FormLabel className="text-purple-600 dark:text-purple-300 font-medium">City</FormLabel>
+                    <Input
+                      {...field}
+                      placeholder="Enter city"
+                      className="rounded-xl py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                    />
+                    <FormMessage className="text-pink-500" />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              name="address.state"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State</FormLabel>
-                  <Input {...field} placeholder="Enter state" />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                name="address.state"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="transition-all duration-200 hover:translate-y-[-2px]">
+                    <FormLabel className="text-purple-600 dark:text-purple-300 font-medium">State</FormLabel>
+                    <Input
+                      {...field}
+                      placeholder="Enter state"
+                      className="rounded-xl py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                    />
+                    <FormMessage className="text-pink-500" />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <FormField
-              name="address.zipCode"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Zip Code</FormLabel>
-                  <Input {...field} placeholder="Enter zip code" />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                name="address.zipCode"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="transition-all duration-200 hover:translate-y-[-2px]">
+                    <FormLabel className="text-purple-600 dark:text-purple-300 font-medium">Zip Code</FormLabel>
+                    <Input
+                      {...field}
+                      placeholder="Enter zip code"
+                      className="rounded-xl py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                    />
+                    <FormMessage className="text-pink-500" />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              name="address.country"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country</FormLabel>
-                  <Input {...field} placeholder="Enter country" />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                name="address.country"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="transition-all duration-200 hover:translate-y-[-2px]">
+                    <FormLabel className="text-purple-600 dark:text-purple-300 font-medium">Country</FormLabel>
+                    <Input
+                      {...field}
+                      placeholder="Enter country"
+                      className="rounded-xl py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                    />
+                    <FormMessage className="text-pink-500" />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full cursor-pointer">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full cursor-pointer mt-8 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl py-4 font-medium text-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Please wait
                 </>
               ) : (
@@ -167,7 +201,8 @@ function CreateCompanyPage() {
         </Form>
       </div>
     </div>
-  );
+  )
 }
 
-export default CreateCompanyPage;
+export default CreateCompanyPage
+
