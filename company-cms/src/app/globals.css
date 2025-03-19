@@ -79,6 +79,15 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+
+  --light-stone: oklch(0.62 0.02 83.82); /* #969590 */
+  --light-pink: oklch(0.75 0.09 25.54); /* #E3A6A2 */
+  --light-beige: oklch(0.85 0.07 78.98); /* #F2D2A3 */
+  --light-cream: oklch(0.93 0.03 85.08); /* #F9EBD6 */
+  --light-tan: oklch(0.82 0.06 58.82); /* #EAC9B4 */
+  --light-mauve: oklch(0.65 0.05 5.23); /* #B29597 */
+  --cyan-green : oklch(77.11% 0.0939 189.31);/*#65C8C1*/
 }
 
 .dark {
@@ -114,6 +123,16 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(0.279 0.041 260.031);
   --sidebar-ring: oklch(0.446 0.043 257.281);
+
+
+    /* Dark mode custom colors */
+  --dark-navy: oklch(0.08 0.05 265.74); /* #010428 */
+  --dark-blue: oklch(0.09 0.04 248.83); /* #001530 */
+  --dark-teal: oklch(0.12 0.03 210.65); /* #002029 */
+  --dark-slate: oklch(0.17 0.03 210.65); /* #00303D */
+  --dark-ocean: oklch(0.23 0.04 210.65); /* #004052 */
+  --dark-jade: oklch(0.3 0.05 180.0); /* #065257 */
+  --dark-aqua: oklch(0.42 0.1 190.0); /* #00747A */
 }
 
 @layer base {

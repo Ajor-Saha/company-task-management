@@ -41,14 +41,14 @@ function Header() {
         <div
           className={`max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 flex justify-between items-center rounded-full transition-all duration-300 ease-in-out ${
             isScrolledDown
-              ? "bg-gray-400/70 dark:bg-gray-800/70"
-              : "bg-gray-400 dark:bg-gray-800"
+              ? "bg-[var(--light-cream)]/60 dark:bg-[var(--dark-slate)]/70"
+              : "bg-[var(--light-tan)]/70 dark:bg-[var(--dark-teal)]"
           }`}
         >
           {/* Left Side: Project Name */}
           <Link
             href="/"
-            className="md:text-xl text-lg font-semibold font-serif dark:text-white"
+            className="md:text-xl text-lg font-semibold font-serif text-[var(--dark-navy)] dark:text-[var(--light-cream)]"
           >
             Company CMS
           </Link>
@@ -57,25 +57,25 @@ function Header() {
           <nav className="hidden md:flex space-x-6">
             <a
               href="#"
-              className="hover:text-gray-300 dark:text-gray-200 dark:hover:text-white"
+              className="text-[var(--dark-blue)] hover:underline font-semibold hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
             >
               Home
             </a>
             <a
               href="#"
-              className="hover:text-gray-300 dark:text-gray-200 dark:hover:text-white"
+              className="text-[var(--dark-blue)] hover:underline font-semibold hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
             >
               About
             </a>
             <a
               href="#"
-              className="hover:text-gray-300 dark:text-gray-200 dark:hover:text-white"
+              className="text-[var(--dark-blue)] hover:underline font-semibold hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
             >
               Services
             </a>
             <a
               href="#"
-              className="hover:text-gray-300 dark:text-gray-200 dark:hover:text-white"
+              className="text-[var(--dark-blue)] font-semibold hover:underline hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
             >
               Contact
             </a>
@@ -84,11 +84,11 @@ function Header() {
           {/* Right Side: Login (md+) & Theme Toggle */}
           <div className="flex items-center space-x-4">
             {currentUser ? (
-              <Button className="hidden md:block rounded-full md:px-6 lg:px-8 xl:px-10 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
+              <Button className="hidden md:block rounded-full md:px-6 lg:px-8 xl:px-10 bg-[var(--light-tan)] hover:bg-[var(--light-pink)] dark:bg-[var(--dark-aqua)] dark:hover:bg-[var(--dark-jade)] text-[var(--dark-navy)] dark:text-[var(--light-cream)]">
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
             ) : (
-              <Button className="hidden md:block rounded-full md:px-6 lg:px-8 xl:px-10 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
+              <Button className="hidden md:block rounded-full md:px-6 lg:px-8 xl:px-10 bg-[var(--light-mauve)]/60 hover:bg-[var(--light-pink)] dark:bg-[var(--dark-aqua)] dark:hover:bg-[var(--dark-jade)] text-[var(--dark-navy)] dark:text-[var(--light-cream)]">
                 <Link href="/sign-in">Login</Link>
               </Button>
             )}
@@ -98,7 +98,7 @@ function Header() {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden dark:text-white"
+              className="md:hidden text-[var(--dark-navy)] dark:text-[var(--light-cream)]"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -109,38 +109,38 @@ function Header() {
 
       {/* Mobile Menu Dropdown (Includes Login) */}
       {isOpen && (
-        <div className="md:hidden bg-gray-400 dark:bg-gray-800 p-4 space-y-2 w-full max-w-7xl mx-auto mt-2 rounded-b-lg fixed top-[100px] left-0 right-0 z-40">
+        <div className="md:hidden bg-[var(--light-cream)] dark:bg-[var(--dark-teal)] p-4 space-y-2 w-full max-w-7xl mx-auto mt-2 rounded-b-lg fixed top-[100px] left-0 right-0 z-40">
           <a
             href="#"
-            className="block py-2 dark:text-gray-200 dark:hover:text-white"
+            className="block py-2 text-[var(--dark-blue)] hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
           >
             Home
           </a>
           <a
             href="#"
-            className="block py-2 dark:text-gray-200 dark:hover:text-white"
+            className="block py-2 text-[var(--dark-blue)] hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
           >
             About
           </a>
           <a
             href="#"
-            className="block py-2 dark:text-gray-200 dark:hover:text-white"
+            className="block py-2 text-[var(--dark-blue)] hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
           >
             Services
           </a>
           <a
             href="#"
-            className="block py-2 dark:text-gray-200 dark:hover:text-white"
+            className="block py-2 text-[var(--dark-blue)] hover:text-[var(--dark-aqua)] dark:text-[var(--light-beige)] dark:hover:text-[var(--light-cream)]"
           >
             Contact
           </a>
 
           {currentUser ? (
-            <Button className="w-full rounded-full md:px-6 lg:px-8 xl:px-10 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
+            <Button className="w-full rounded-full md:px-6 lg:px-8 xl:px-10 bg-[var(--light-tan)] hover:bg-[var(--light-pink)] dark:bg-[var(--dark-aqua)] dark:hover:bg-[var(--dark-jade)] text-[var(--dark-navy)] dark:text-[var(--light-cream)]">
               <Link href="/dashboard">Dashboard</Link>
             </Button>
           ) : (
-            <Button className="w-full rounded-full md:px-6 lg:px-8 xl:px-10 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
+            <Button className="w-full rounded-full md:px-6 lg:px-8 xl:px-10 bg-[var(--light-tan)] hover:bg-[var(--light-pink)] dark:bg-[var(--dark-aqua)] dark:hover:bg-[var(--dark-jade)] text-[var(--dark-navy)] dark:text-[var(--light-cream)]">
               <Link href="/sign-in">Login</Link>
             </Button>
           )}

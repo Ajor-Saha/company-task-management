@@ -8,7 +8,7 @@ function Footer() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
-      className="flex flex-col items-center justify-center text-center py-24 lg:py-32 px-6 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300"
+      className="flex flex-col items-center justify-center text-center py-24 lg:py-32 px-6  text-gray-800 dark:text-gray-300"
     >
       <div className="container mx-auto max-w-6xl">
         <nav className="flex flex-wrap justify-center md:justify-between items-center mb-8">
