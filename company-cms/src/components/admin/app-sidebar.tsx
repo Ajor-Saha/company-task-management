@@ -46,6 +46,7 @@ const sidebarData = {
       items: [
         { title: "Account", url: "/settings/account-manage" },
         { title: "Company Manage", url: "/settings/company-manage" },
+        { title: "Password Manage", url: "/settings/password-manage" },
       ],
     },
   ],
