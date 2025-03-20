@@ -6,6 +6,7 @@ import {  SidebarTrigger } from "../ui/sidebar";
 import { Separator } from "../ui/separator";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "../ui/breadcrumb";
 import React from "react";
+import ThemeToggle from "../header/ThemeToggle";
 
 // Breadcrumb Mapping Based on Sidebar Data
 const breadcrumbMap: Record<string, string> = {
@@ -39,6 +40,10 @@ export function BreadcrumbComponent() {
           ))}
         </BreadcrumbList>
       </Breadcrumb>
+      <span className="ml-auto">
+      <ThemeToggle />
+      </span>
+     
     </header>
   );
 }
