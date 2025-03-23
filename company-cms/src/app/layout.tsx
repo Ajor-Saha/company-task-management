@@ -27,17 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* <ThemeProvider attribute="class" defaultTheme="system" enableSystem> */}
         <ThemeProviderWrapper>
-          
-          <main>{children}</main>
+          <main >{children}</main>
           {/* {children} */}
           <Toaster />
-         
         </ThemeProviderWrapper>
 
         {/* </ThemeProvider> */}
