@@ -12,6 +12,7 @@ import ThemeToggle from "../header/ThemeToggle";
 const breadcrumbMap: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/project/add-project": "Project > Add Project",
+  "/project/all-project": "Project > All Project",
   "/project/manage-project": "Project > Manage Project",
   "/settings/account-manage": "Settings > Account Manage",
   "/settings/company-manage": "Settings > Company Manage",

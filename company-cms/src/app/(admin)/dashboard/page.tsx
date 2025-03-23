@@ -93,6 +93,7 @@ export default function DashboardClient() {
   const [timeframe, setTimeframe] = useState("Last year")
 
   return (
+
     <div className="flex min-h-screen w-full flex-col">
  
       {/* Main Content */}
@@ -232,4 +233,5 @@ export default function DashboardClient() {
     </div>
   )
 }
+
 

@@ -8,6 +8,7 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { companyTable } from "./tbl-company";
+import { projectAssignmentsTable } from "./tbl-project-assignments";
 
 export const roleEnum = pgEnum("role", [
   "admin",
@@ -31,9 +32,11 @@ export const userTable = pgTable("tbl_user", {
   updatedAt: timestamp("updated_at").default(sql`current_timestamp`).$onUpdate(() => new Date()),
 });
 
-export const usersRelations = relations(userTable, ({ one }) => ({
+export const usersRelations = relations(userTable, ({ one, many }) => ({
   company: one(companyTable, {
     fields: [userTable.companyId],
     references: [companyTable.id],
   }),
+  // Users may be assigned to many projects via the join table
+  assignedProjects: many(projectAssignmentsTable),
 }));
