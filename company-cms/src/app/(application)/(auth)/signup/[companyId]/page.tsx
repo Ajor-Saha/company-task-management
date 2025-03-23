@@ -62,7 +62,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-100">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg p-8">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Left Section */}
@@ -70,7 +70,7 @@ export default function SignUpPage() {
             <h2 className="text-2xl font-bold mb-4">Welcome</h2>
             <div className="flex-grow flex items-center justify-center">
               <Image
-                src="/asset/signup-pic.svg"
+                src="/asset/SignUp.png"
                 alt="Sign Up"
                 width={400}
                 height={400}

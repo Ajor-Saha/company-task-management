@@ -49,6 +49,14 @@ const sidebarData = {
         { title: "Password Manage", url: "/settings/password-manage" },
       ],
     },
+    {
+      title: "Employee",
+      url: "#",
+      items: [
+        { title: "Add Employee", url: "/employee/add-employee" },
+        { title: "Show Employees", url: "/employee/show-employees" },
+      ],
+    },
   ],
 };
 

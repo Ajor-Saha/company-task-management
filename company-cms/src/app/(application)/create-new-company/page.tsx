@@ -57,7 +57,7 @@ function CreateCompanyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 flex flex-col items-center justify-center p-4 font-sans">
+    <div className="min-h-screen  flex flex-col items-center justify-center p-4 font-sans">
       <div className="w-full max-w-4xl p-8 bg-white/80 dark:bg-slate-700/40 backdrop-blur-sm rounded-3xl shadow-xl border border-purple-100 dark:border-slate-600">
         <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-300 mb-8 text-center">Create a Company</h2>
 
