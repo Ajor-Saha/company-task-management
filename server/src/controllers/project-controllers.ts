@@ -21,10 +21,10 @@ export const createProject = asyncHandler(
       const { name, description, budget } = req.body;
 
       // Validate required fields
-      if (!name || name.trim() === "") {
+      if (!name || name.trim() === "" || !description || description.trim() === "" || !budget || isNaN(Number(budget))) {
         return res
           .status(400)
-          .json(new ApiResponse(400, {}, "Project name is required"));
+          .json(new ApiResponse(400, {}, "Project name, description, budget  is required"));
       }
 
       // Prepare the new project object
