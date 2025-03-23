@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Define public paths where no authentication is required
-  const publicPaths = ['/sign-in', '/signup/:companyId', '/verify/:email', '/']
+  const publicPaths = ['/sign-in', '/signup', '/verify', '/']
   const isPublicPath = publicPaths.includes(path)
 
   const token = request.cookies.get('accessToken')?.value || ''
@@ -31,8 +31,8 @@ export const config = {
   matcher: [
     '/',
     '/sign-in',
-    '/signup/:companyId',
-    '/verify/:email',
+    '/signup',
+    '/verify',
     '/dashboard',    // Example of private route
     '/profile',      // Example of private route
     // Add other private paths here

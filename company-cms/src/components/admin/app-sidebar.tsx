@@ -34,15 +34,16 @@ const sidebarData = {
     
     {
       title: "Project",
-      url: "#",
+      url: "/project",
       items: [
         { title: "Add Project", url: "/project/add-project" },
+        { title: "All Project", url: "/project/all-project" },
         { title: "Manage Project", url: "/project/manage-project" },
       ],
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       items: [
         { title: "Account", url: "/settings/account-manage" },
         { title: "Company Manage", url: "/settings/company-manage" },
