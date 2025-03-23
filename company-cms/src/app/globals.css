@@ -79,6 +79,13 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+  --light-color-1: oklch(0.913 0.041 24.936); /* D8E2DC */
+  --light-color-2: oklch(0.961 0.043 47.487); /* FFE5D9 */
+  --light-color-3: oklch(0.996 0.007 106.294); /* FBFAF0 */
+  --light-color-4: oklch(0.971 0.041 32.577); /* FFE9EE */
+  --light-color-5: oklch(0.946 0.061 33.471); /* FFDDE4 */
+  --light-color-6: oklch(0.833 0.167 134.546); /* B0E7AE */
 }
 
 .dark {
@@ -114,6 +121,16 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(0.279 0.041 260.031);
   --sidebar-ring: oklch(0.446 0.043 257.281);
+
+/* Additional Dark Mode Colors (Converted from Hex Codes) */
+--dark-color-1: oklch(0.1426 0.0717 278.24); /* 010428 */
+--dark-color-2: oklch(0.1976 0.0544 263.74); /* 001530 */
+--dark-color-3: oklch(0.2261 0.0323 222.82); /* 002029 */
+--dark-color-4: oklch(0.2875 0.0416 224.84); /* 00303D */
+--dark-color-5: oklch(0.3463 0.0512 227.77); /* 004052 */
+--dark-color-6: oklch(0.4015 0.0526 199.79); /* 065257 */
+--dark-color-7: oklch(0.5101 0.0696 198.54); /* 00747A */
+  
 }
 
 @layer base {
@@ -122,5 +139,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: url("/company-cms/public/asset/asfalt-light.png");
+    background-repeat: repeat;
+    background-size: 200px;
   }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    overflow-x: hidden;
+  }  
 }
