@@ -1,9 +1,11 @@
 import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import logger from "morgan";
 import dotenv from "dotenv";
 import company_router from "./routes/company-route";
 import user_router from "./routes/auth-route";
+import project_router from "./routes/project-route";
 dotenv.config();
 
 const app = express();
@@ -12,6 +14,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(logger('dev'));
 
 app.use(
   cors({
@@ -23,9 +26,10 @@ app.use(
 // Mount user router
 app.use("/api/auth", user_router);
 app.use("/api/company", company_router);
+app.use("/api/project", project_router);
 
 app.get("/", (req, res) => {
-  res.send("Hello World");
+  res.send("Company & task server is running");
 });
 
 

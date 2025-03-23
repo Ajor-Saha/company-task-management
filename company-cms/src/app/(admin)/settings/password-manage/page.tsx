@@ -56,8 +56,8 @@ const UpdatePassword = () => {
   };
 
   return (
-    <div className="min-h-screen dark:bg-slate-800 flex items-center justify-center p-6">
-      <Card className="max-w-4xl p-8 dark:bg-slate-700/50">
+    <div className="min-h-screen  w-full flex items-center justify-center p-16">
+      <Card className="p-8 w-full dark:bg-slate-700/50">
         <CardHeader>
           <CardTitle>Password</CardTitle>
           <CardDescription>

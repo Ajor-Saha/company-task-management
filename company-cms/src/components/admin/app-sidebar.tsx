@@ -34,15 +34,16 @@ const sidebarData = {
     
     {
       title: "Project",
-      url: "#",
+      url: "/project",
       items: [
         { title: "Add Project", url: "/project/add-project" },
+        { title: "All Project", url: "/project/all-project" },
         { title: "Manage Project", url: "/project/manage-project" },
       ],
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       items: [
         { title: "Account", url: "/settings/account-manage" },
         { title: "Company Manage", url: "/settings/company-manage" },
@@ -73,20 +74,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   };
 
+  
+
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <GalleryVerticalEnd className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">Company Cms</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
