@@ -37,6 +37,8 @@ export const verifyJWT = async (
         email: userTable.email,
         firstName: userTable.firstName,
         lastName: userTable.lastName,
+        companyId: userTable.companyId,
+        role: userTable.role,
       })
       .from(userTable)
       .where(eq(userTable.userId, decodedToken.userId))

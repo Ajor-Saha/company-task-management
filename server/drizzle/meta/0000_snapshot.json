@@ -1,5 +1,5 @@
 {
-  "id": "d45f003f-9f6c-456f-aedf-f3b8665fb107",
+  "id": "53405307-5c25-4b5c-9bdb-b08aecb6312b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -216,10 +216,11 @@
         },
         "status": {
           "name": "status",
-          "type": "varchar(100)",
+          "type": "project_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
-          "default": "'To-Do'"
+          "default": "'to-do'"
         },
         "company_id": {
           "name": "company_id",
@@ -263,6 +264,163 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.tbl_task": {
+      "name": "tbl_task",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "budget": {
+          "name": "budget",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "task_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'to-do'"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_to": {
+          "name": "assigned_to",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "current_timestamp"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tbl_task_project_id_tbl_project_id_fk": {
+          "name": "tbl_task_project_id_tbl_project_id_fk",
+          "tableFrom": "tbl_task",
+          "tableTo": "tbl_project",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tbl_task_assigned_to_tbl_user_user_id_fk": {
+          "name": "tbl_task_assigned_to_tbl_user_user_id_fk",
+          "tableFrom": "tbl_task",
+          "tableTo": "tbl_user",
+          "columnsFrom": [
+            "assigned_to"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tbl_project_assignments": {
+      "name": "tbl_project_assignments",
+      "schema": "",
+      "columns": {
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_at": {
+          "name": "assigned_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tbl_project_assignments_project_id_tbl_project_id_fk": {
+          "name": "tbl_project_assignments_project_id_tbl_project_id_fk",
+          "tableFrom": "tbl_project_assignments",
+          "tableTo": "tbl_project",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tbl_project_assignments_user_id_tbl_user_user_id_fk": {
+          "name": "tbl_project_assignments_user_id_tbl_user_user_id_fk",
+          "tableFrom": "tbl_project_assignments",
+          "tableTo": "tbl_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -273,6 +431,26 @@
         "admin",
         "senior_employee",
         "assigned_employee"
+      ]
+    },
+    "public.project_status": {
+      "name": "project_status",
+      "schema": "public",
+      "values": [
+        "to-do",
+        "hold",
+        "review",
+        "completed"
+      ]
+    },
+    "public.task_status": {
+      "name": "task_status",
+      "schema": "public",
+      "values": [
+        "to-do",
+        "hold",
+        "review",
+        "completed"
       ]
     }
   },
