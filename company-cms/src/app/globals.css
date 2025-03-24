@@ -141,6 +141,14 @@
   --novel-highlight-orange: #5c3a1a;
   --novel-highlight-pink: #5c1a3a;
   --novel-highlight-gray: #3a3a3a;
+  /* Additional Dark Mode Colors (Converted from Hex Codes) */
+  --dark-color-1: oklch(0.1426 0.0717 278.24); /* 010428 */
+  --dark-color-2: oklch(0.1976 0.0544 263.74); /* 001530 */
+  --dark-color-3: oklch(0.2261 0.0323 222.82); /* 002029 */
+  --dark-color-4: oklch(0.2875 0.0416 224.84); /* 00303D */
+  --dark-color-5: oklch(0.3463 0.0512 227.77); /* 004052 */
+  --dark-color-6: oklch(0.4015 0.0526 199.79); /* 065257 */
+  --dark-color-7: oklch(0.5101 0.0696 198.54); /* 00747A */
 }
 
 @layer base {
@@ -155,8 +163,9 @@
   }
   html {
     scroll-behavior: smooth;
+   
   }
   body {
     overflow-x: hidden;
-  }
+  }  
 }
