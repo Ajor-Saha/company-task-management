@@ -36,22 +36,21 @@ function Header() {
   return (
     <>
       <header
-        className={`sticky px-2 sm:px-5 lg:px-0 top-0 z-50 w-full flex items-center justify-center min-h-[70px] sm:min-h-[80px] md:min-h-[100px] transition-all duration-300 ease-in-out ${
+        className={`sticky px-1 sm:px-3 lg:px-0 top-0 z-50 w-full flex items-center justify-center min-h-[60px] sm:min-h-[70px] md:min-h-[80px] transition-all duration-300 ease-in-out ${
           isScrolledDown
             ? "bg-transparent shadow-none"
             : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 "
         }`}
-      
       >
         <div
-          className={`max-w-7xl w-full mx-auto px-3 sm:px-4 py-2 sm:py-3 md:py-4 flex justify-between items-center rounded-full transition-all duration-300 ease-in-out ${
+          className={`max-w-7xl w-full mx-auto px-2 sm:px-4 py-1.5 sm:py-2 md:py-3 flex justify-between items-center rounded-full transition-all duration-300 ease-in-out ${
             isScrolledDown ? "bg-amber-100/70 dark:bg-teal-800/70" : "bg-amber-100 dark:bg-teal-800"
           }`}
         >
           {/* Left Side: Project Name */}
           <Link
             href="/"
-            className="text-base sm:text-lg md:text-xl font-semibold font-serif dark:text-white truncate max-w-[120px] sm:max-w-full"
+            className="text-sm sm:text-lg md:text-xl font-semibold font-serif dark:text-white truncate max-w-[100px] xs:max-w-[140px] sm:max-w-full"
           >
             Company CMS
           </Link>
@@ -88,7 +87,7 @@ function Header() {
           </nav>
 
           {/* Right Side: Login (md+) & Theme Toggle */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-3 md:space-x-4">
             {currentUser ? (
               <Button className="hidden md:block rounded-full text-sm md:text-base md:px-4 lg:px-6 xl:px-8 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
                 <Link href="/dashboard">Dashboard</Link>
@@ -108,7 +107,7 @@ function Header() {
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
             >
-              {isOpen ? <X size={20} className="sm:size-24" /> : <Menu size={20} className="sm:size-24" />}
+              {isOpen ? <X size={20} className="sm:w-5 sm:h-5" /> : <Menu size={20} className="sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
@@ -116,7 +115,7 @@ function Header() {
 
       {/* Mobile Menu Dropdown (Includes Login) */}
       {isOpen && (
-        <div className="md:hidden bg-amber-100 dark:bg-teal-800 p-3 sm:p-4 space-y-1 sm:space-y-2 fixed top-[70px] sm:top-[80px] left-0 right-0 z-40 w-screen overflow-y-auto max-h-[calc(100vh-70px)] sm:max-h-[calc(100vh-80px)]">
+        <div className="md:hidden bg-amber-100 dark:bg-teal-800 p-3 sm:p-4 space-y-1 sm:space-y-2 fixed top-[60px] sm:top-[70px] md:top-[80px] left-0 right-0 z-40 w-screen overflow-y-auto max-h-[calc(100vh-60px)] sm:max-h-[calc(100vh-70px)] md:max-h-[calc(100vh-80px)]">
           <div className="max-w-7xl mx-auto px-2 sm:px-4">
             <a
               href="#hero"
