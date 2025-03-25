@@ -1,12 +1,22 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { GalleryVerticalEnd, Minus, Plus } from "lucide-react";
+import type * as React from "react"
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Building2,
+  FolderKanban,
+  GalleryVerticalEnd,
+  KeyRound,
+  LayoutDashboard,
+  LayoutGrid,
+  List,
+  Minus,
+  Plus,
+  PlusCircle,
+  SettingsIcon,
+  UserCog,
+  Users,
+} from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   Sidebar,
   SidebarContent,
@@ -20,70 +30,67 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-} from "@/components/ui/sidebar";
-import { NavUser } from "./nav-user";
-import { usePathname, useRouter } from "next/navigation";
-import useAuthStore from "@/store/store";
-import { Axios } from "@/config/axios";
-import { env } from "@/config/env";
-import Link from "next/link";
+} from "@/components/ui/sidebar"
+import { NavUser } from "./nav-user"
+import { usePathname, useRouter } from "next/navigation"
+import useAuthStore from "@/store/store"
+import { Axios } from "@/config/axios"
+import { env } from "@/config/env"
+import Link from "next/link"
 
 // Sidebar Data
 const sidebarData = {
   navMain: [
-    
     {
       title: "Project",
       url: "/project",
+      icon: <FolderKanban size={20} />,
       items: [
-        { title: "Add Project", url: "/project/add-project" },
-        { title: "All Project", url: "/project/all-project" },
-        { title: "Manage Project", url: "/project/manage-project" },
+        { title: "Add Project", url: "/project/add-project", icon: <PlusCircle size={16} /> },
+        { title: "All Project", url: "/project/all-project", icon: <List size={16} /> },
+        { title: "Manage Project", url: "/project/manage-project", icon: <LayoutGrid size={16} /> },
       ],
     },
     {
       title: "Settings",
       url: "/settings",
+      icon: <SettingsIcon size={20} />,
       items: [
-        { title: "Account", url: "/settings/account-manage" },
-        { title: "Company Manage", url: "/settings/company-manage" },
-        { title: "Password Manage", url: "/settings/password-manage" },
+        { title: "Account", url: "/settings/account-manage", icon: <UserCog size={16} /> },
+        { title: "Company Manage", url: "/settings/company-manage", icon: <Building2 size={16} /> },
+        { title: "Password Manage", url: "/settings/password-manage", icon: <KeyRound size={16} /> },
       ],
     },
     {
       title: "Employee",
       url: "#",
+      icon: <Users size={20} />,
       items: [
-        { title: "Add Employee", url: "/employee/add-employee" },
-        { title: "Show Employees", url: "/employee/show-employees" },
+        { title: "Add Employee", url: "/employee/add-employee", icon: <PlusCircle size={16} /> },
+        { title: "Show Employees", url: "/employee/show-employees", icon: <List size={16} /> },
       ],
     },
   ],
-};
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, logout } = useAuthStore();
-  const router = useRouter();
-  const pathname = usePathname(); // Get the current page path
+  const { user, logout } = useAuthStore()
+  const router = useRouter()
+  const pathname = usePathname() // Get the current page path
 
   const handleSignOut = async () => {
     try {
-      const response = await Axios.post(
-        `${env.BACKEND_BASE_URL}/api/auth/signout`
-      );
+      const response = await Axios.post(`${env.BACKEND_BASE_URL}/api/auth/signout`)
       if (response.data.success) {
-        logout();
-        router.push("/sign-in");
+        logout()
+        router.push("/sign-in")
       } else {
-        throw new Error("Failed to sign out");
+        throw new Error("Failed to sign out")
       }
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
-  };
-
-  
-
+  }
 
   return (
     <Sidebar {...props}>
@@ -106,19 +113,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <SidebarGroup>
-          <Link href="/dashboard" className="text-sm px-2 bg-slate-100 py-2 hover:bg-slate-300 dark:bg-gray-900 dark:hover:bg-gray-700">Dashboard</Link>
+          <Link
+            href="/dashboard"
+            className="text-sm px-2 py-2 flex items-center gap-2 bg-slate-100 hover:bg-slate-300 dark:bg-gray-900 dark:hover:bg-gray-700"
+          >
+            <LayoutDashboard size={18} />
+            <span>Dashboard</span>
+          </Link>
         </SidebarGroup>
         <SidebarGroup>
           <SidebarMenu>
             {sidebarData.navMain.map((item, index) => (
-              <Collapsible
-                key={item.title}
-                defaultOpen={pathname.startsWith(item.url)}
-                className="group/collapsible"
-              >
+              <Collapsible key={item.title} defaultOpen={pathname.startsWith(item.url)} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
+                      {item.icon && <span className="mr-2">{item.icon}</span>}
                       {item.title}
                       <Plus className="ml-auto group-data-[state=open]/collapsible:hidden" />
                       <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden" />
@@ -130,11 +140,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <SidebarMenuSub>
                         {item.items.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={pathname === subItem.url}
-                            >
-                              <a href={subItem.url}>{subItem.title}</a>
+                            <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
+                              <a href={subItem.url} className="flex items-center gap-2">
+                                {subItem.icon && <span>{subItem.icon}</span>}
+                                {subItem.title}
+                              </a>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -160,5 +170,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  );
+  )
 }
+
