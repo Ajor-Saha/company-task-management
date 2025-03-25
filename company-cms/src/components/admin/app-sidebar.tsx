@@ -115,7 +115,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <Link
             href="/dashboard"
-            className="text-sm px-2 py-2 flex items-center gap-2 bg-slate-100 hover:bg-slate-300 dark:bg-gray-900 dark:hover:bg-gray-700"
+            className="text-sm px-2 py-2 flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-gray-900 dark:hover:bg-gray-700"
           >
             <LayoutDashboard size={18} />
             <span>Dashboard</span>

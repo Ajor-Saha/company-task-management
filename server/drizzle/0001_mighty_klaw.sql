@@ -1,0 +1,1 @@
+ALTER TABLE "tbl_task" DROP COLUMN "budget";

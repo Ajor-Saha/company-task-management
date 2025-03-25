@@ -4,8 +4,9 @@ import { db } from "../db";
 import { userTable } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { ApiResponse } from "../utils/api-response";
+import { asyncHandler } from "../utils/asyncHandler";
 
-export const verifyJWT = async (
+export const verifyJWT = asyncHandler( async (
   req: Request & { user?: any },
   res: Response,
   next: NextFunction
@@ -17,7 +18,7 @@ export const verifyJWT = async (
       req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      res.status(401).json(new ApiResponse(401, null, "Unauthorized request"));
+      return res.status(401).json(new ApiResponse(401, null, "Unauthorized request"));
     }
 
     // Verify and decode the JWT
@@ -27,7 +28,7 @@ export const verifyJWT = async (
     ) as { userId: string };
 
     if (!decodedToken || !decodedToken.userId) {
-      res.status(401).json(new ApiResponse(401, null, "Invalid access token"));
+      return res.status(401).json(new ApiResponse(401, null, "Invalid access token"));
     }
 
     // Fetch the user from the database
@@ -45,7 +46,7 @@ export const verifyJWT = async (
       .then((result) => result[0]); 
       
     if (!user) {
-      res.status(401).json(new ApiResponse(401, null, "User not found"));
+      return res.status(401).json(new ApiResponse(401, null, "User not found"));
     }
 
     // Attach the user to the request object for further use
@@ -55,7 +56,7 @@ export const verifyJWT = async (
     next();
   } catch (error: any) {
     console.error("JWT Verification Error:", error);
-    res
+    return res
       .status(401)
       .json(
         new ApiResponse(
@@ -65,4 +66,4 @@ export const verifyJWT = async (
         )
       );
   }
-};
+});

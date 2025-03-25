@@ -11,10 +11,11 @@ export const createProject = asyncHandler(
     try {
       // Get companyId from the authenticated user
       const companyId = req.user?.companyId;
-      if (!companyId) {
+      const isAdmin = req.user?.role === "admin";
+      if (!companyId || !isAdmin) {
         return res
           .status(401)
-          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found or you are not an admin"));
       }
 
       // Get project details from the request body
@@ -186,6 +187,7 @@ export const deleteProject = asyncHandler(
   try {
     const { projectId } = req.params;
     const companyId = req.user.companyId; // Assuming req.user is populated from middleware
+    const isAdmin = req.user.role === "admin";
 
     if (!projectId) {
       return res.status(400).json({
@@ -210,7 +212,7 @@ export const deleteProject = asyncHandler(
     }
 
     // Ensure the project belongs to the user's company before deleting
-    if (project[0].companyId !== companyId) {
+    if (project[0].companyId !== companyId || req.user.role !== "admin") {
       return res.status(403).json({
         statusCode: 403,
         data: {},

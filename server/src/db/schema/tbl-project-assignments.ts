@@ -4,6 +4,7 @@ import { userTable } from "./tbl-user";
 import { projectTable } from "./tbl-project";
 
 export const projectAssignmentsTable = pgTable("tbl_project_assignments", {
+  id: text("id").notNull().primaryKey(),
   projectId: text("project_id")
     .notNull()
     .references(() => projectTable.id, { onDelete: "cascade" }),

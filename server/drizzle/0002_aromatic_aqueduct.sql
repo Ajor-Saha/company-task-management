@@ -1,0 +1,1 @@
+ALTER TABLE "tbl_project_assignments" ADD COLUMN "id" text PRIMARY KEY NOT NULL;
