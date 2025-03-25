@@ -16,7 +16,6 @@ export const taskTable = pgTable("tbl_task", {
   id: text("id").notNull().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  budget: integer("budget"),
   status: taskStatusEnum("status").default("to-do"),
   projectId: text("project_id")
     .references(() => projectTable.id, { onDelete: "cascade" })
