@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { RevenueChart } from "@/app/(admin)/dashboard/revenue-chart"
-import { UnitSoldChart } from "@/app/(admin)/dashboard/unit-sold-chart"
-import { MetricCard } from "@/app/(admin)/dashboard/metric-card"
-import PStatisticsGraph from "@/app/(admin)/dashboard/PStatisticsGraph"
+import { RevenueChart } from "@/app/(admin)/dashboard/_components/revenue-chart"
+import { UnitSoldChart } from "@/app/(admin)/dashboard/_components/unit-sold-chart"
+import { MetricCard } from "@/app/(admin)/dashboard/_components/metric-card"
+import PStatisticsGraph from "@/app/(admin)/dashboard/_components/PStatisticsGraph"
 
 const softwareProducts = [
   {
