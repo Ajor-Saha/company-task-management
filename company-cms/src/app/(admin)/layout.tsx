@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <main>
-      <SidebarProvider>
+      <SidebarProvider >
         <AppSidebar />
         <SidebarInset>
           <BreadcrumbComponent />{" "}
