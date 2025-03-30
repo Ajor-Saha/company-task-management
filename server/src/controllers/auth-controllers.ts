@@ -10,6 +10,10 @@ import { generateVerificationCode } from "../utils/generate-verification-code";
 import { generateExpiryDate } from "../utils/generate-verification-code";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler";
+import { createR2Client } from "../utils/upload-r2";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { nanoid } from "nanoid";
+import fs from 'fs/promises';
 
 export const signup = asyncHandler(
   async (req: Request, res: Response) => {
@@ -147,10 +151,10 @@ export const login = asyncHandler(
       .from(userTable)
       .where(eq(userTable.email, email));
 
-    if (!user || !user[0].isVerified) {
+    if (!user || !user[0].isVerified || user[0].role !== "admin") {
       return res
         .status(404)
-        .json(new ApiResponse(404, {}, "User not found or Not Verified"));
+        .json(new ApiResponse(404, {}, "User not found or Not Verified or Not Admin"));
     }
 
     const isPasswordValid = await bcrypt.compare(password, user[0].password);
@@ -193,6 +197,8 @@ export const login = asyncHandler(
     return res.status(500).json(new ApiResponse(500, null, "Internal server error"));
   }
 });
+
+
 
 export const logout = asyncHandler(
   async (req: Request, res: Response) => {
@@ -276,5 +282,93 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error verifying user:", error);
     return res.status(500).json(new ApiResponse(500, {}, "Error verifying user"));
+  }
+});
+
+export const updateProfilePicture = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    // Ensure the authenticated user exists
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json(new ApiResponse(401, {}, 'Unauthorized: User is missing'));
+    }
+
+
+    const file = req.avatar;
+   
+
+    if (!file || !file.filepath) {
+      return res.status(400).json(new ApiResponse(400, {}, 'No file uploaded or invalid file'));
+    }
+
+    // Create R2 client (S3-compatible client)
+    const r2 = createR2Client();
+
+    // Retrieve existing user from the database
+    const existingUser = await db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.userId, authUser.userId))
+      .limit(1);
+
+    if (!existingUser.length) {
+      return res.status(404).json(new ApiResponse(404, {}, 'User not found'));
+    }
+
+    const existedUser = existingUser[0];
+
+    // Delete previous profile picture from R2 if it exists
+    if (existedUser.avatar) {
+      const currentImageKey = existedUser.avatar.replace(`${process.env.PUBLIC_ACCESS_URL}/`, '');
+      if (currentImageKey) {
+        await r2.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.BUCKET_NAME!,
+            Key: currentImageKey,
+          })
+        );
+      }
+    }
+
+    // Read the file from the temporary path
+    const buffer = await fs.readFile(file.filepath);
+    const uniqueFileName = `${nanoid()}-${encodeURIComponent(file.originalFilename || 'unnamed')}`;
+
+    // Upload new profile picture to R2
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: process.env.BUCKET_NAME!,
+        Key: uniqueFileName,
+        Body: buffer,
+        ContentType: file.mimetype || 'application/octet-stream',
+      })
+    );
+
+    // Clean up the temporary file
+    await fs.unlink(file.filepath);
+
+    // Construct new profile picture URL
+    const profileUrl = `${process.env.PUBLIC_ACCESS_URL}/${uniqueFileName}`;
+
+    // Update the user record in the database
+    await db
+      .update(userTable)
+      .set({ avatar: profileUrl })
+      .where(eq(userTable.userId, authUser.userId))
+      .execute();
+
+    // Fetch updated user data
+    const updatedUser = await db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.userId, authUser.userId))
+      .limit(1);
+
+    return res.status(200).json(
+      new ApiResponse(200, updatedUser[0], 'Profile picture updated successfully')
+    );
+  } catch (error) {
+    console.error('Error updating profile picture:', error);
+    return res.status(500).json(new ApiResponse(500, null, 'Internal server error'));
   }
 });

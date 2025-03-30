@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/api-response";
 import { db } from "../db";
 import { projectTable } from "../db/schema/tbl-project";
 import { and, eq } from "drizzle-orm";
+import { projectAssignmentsTable, userTable } from "../db/schema";
 
 export const createProject = asyncHandler(
   async (req: Request, res: Response) => {
@@ -101,6 +102,73 @@ export const getCompanyProjects = asyncHandler(
   }
 );
 
+export const getProjectDetails = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      // Get project ID from request parameters
+      const { projectId } = req.params;
+      
+      // Get companyId from authenticated user for authorization
+      const companyId = req.user?.companyId;
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+      }
+
+      // Validate project ID format
+      if (!projectId) {
+        return res
+          .status(400)
+          .json(new ApiResponse(400, {}, "Project ID is required"));
+      }
+
+      // Query the project table for the specific project
+      const project = await db
+        .select({
+          id: projectTable.id,
+          name: projectTable.name,
+          description: projectTable.description,
+          budget: projectTable.budget,
+          status: projectTable.status,
+          companyId: projectTable.companyId,
+          createdAt: projectTable.createdAt,
+          updatedAt: projectTable.updatedAt,
+        })
+        .from(projectTable)
+        .where(
+          and(
+            eq(projectTable.id, projectId),
+            eq(projectTable.companyId, companyId)
+          )
+        )
+        .limit(1);
+
+      // Check if project exists and belongs to the company
+      if (project.length === 0) {
+        return res
+          .status(404)
+          .json(new ApiResponse(404, {}, "Project not found or unauthorized access"));
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            project[0],
+            "Project details fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Error fetching project details:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+
 export const updateProject = asyncHandler(
   async (req: Request, res: Response) => {
     try {
@@ -180,14 +248,11 @@ export const updateProject = asyncHandler(
   }
 );
 
-
-
 export const deleteProject = asyncHandler(
     async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
     const companyId = req.user.companyId; // Assuming req.user is populated from middleware
-    const isAdmin = req.user.role === "admin";
 
     if (!projectId) {
       return res.status(400).json({
@@ -237,3 +302,141 @@ export const deleteProject = asyncHandler(
     });
   }
 });
+
+export const getProjectAssignments = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const companyId = req.user.companyId;
+
+    // Ensure the project ID is provided
+    if (!projectId) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "Project ID is required"));
+    }
+
+    // Get the project assignments
+    const assignments = await db
+      .select({
+        id: projectAssignmentsTable.id,
+        projectId: projectAssignmentsTable.projectId,
+        userId: projectAssignmentsTable.userId,
+      })
+      .from(projectAssignmentsTable)
+      .where(eq(projectAssignmentsTable.projectId, projectId));
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, assignments, "Project assignments fetched successfully")
+      );
+  } catch (error) {
+    console.error("Error fetching project assignments:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+});
+
+export const assignEmployeeToProject = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { projectId, employeeId } = req.query;
+    const companyId = req.user.companyId;
+
+    // Ensure required query parameters are provided
+    if (!projectId || !employeeId) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "Missing required query parameters"));
+    }
+
+    // Convert query parameters to strings
+    const projectIdStr = String(Array.isArray(projectId) ? projectId[0] : projectId);
+    const employeeIdStr = String(Array.isArray(employeeId) ? employeeId[0] : employeeId);
+
+    // Ensure the user is an admin or senior employee
+    if (req.user.role !== "admin" && req.user.role !== "senior_employee") {
+      return res.status(403).json(
+        new ApiResponse(
+          403,
+          {},
+          "Forbidden: Only admins & senior employees can assign employees"
+        )
+      );
+    }
+
+    // Check if the project exists and belongs to the provided company
+    const project = await db
+      .select()
+      .from(projectTable)
+      .where(and(
+        eq(projectTable.id, projectIdStr),
+        eq(projectTable.companyId, companyId as string)
+      ))
+      .limit(1);
+
+    if (!project.length) {
+      return res.status(404).json(
+        new ApiResponse(
+          404,
+          {},
+          "Project not found or does not belong to the company"
+        )
+      );
+    }
+
+    // Check if the employee exists and belongs to the same company
+    const employee = await db
+      .select({ companyId: userTable.companyId })
+      .from(userTable)
+      .where(
+        and(
+          eq(userTable.userId, employeeIdStr),
+          eq(userTable.companyId, companyId as string)
+        )
+      )
+      .limit(1);
+
+    if (!employee.length) {
+      return res.status(404).json(
+        new ApiResponse(
+          404,
+          {},
+          "Employee not found or does not belong to the company"
+        )
+      );
+    }
+
+    // Check if the employee is already assigned to the project
+    const existingAssignment = await db
+      .select({ id: projectAssignmentsTable.id })
+      .from(projectAssignmentsTable)
+      .where(
+        and(
+          eq(projectAssignmentsTable.projectId, projectIdStr),
+          eq(projectAssignmentsTable.userId, employeeIdStr)
+        )
+      )
+      .limit(1);
+
+    if (existingAssignment.length > 0) {
+      return res.status(400).json(
+        new ApiResponse(400, {}, "Employee is already assigned to this project")
+      );
+    }
+
+    // Assign the employee to the project
+    await db.insert(projectAssignmentsTable).values({
+      id: uuidv4(),
+      projectId: projectIdStr,
+      userId: employeeIdStr,
+    });
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, {}, "Employee assigned to project successfully"));
+  } catch (error) {
+    console.error("Error assigning employee to project:", error);
+    res.status(500).json(new ApiResponse(500, null, "Internal server error"));
+  }
+})

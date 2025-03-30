@@ -1,262 +1,241 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import { MoreHorizontal, Loader2 } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Axios } from "@/config/axios";
+import { env } from "@/config/env";
+import { ColorRing } from "react-loader-spinner";
 
-// Mock data for employees
-const employees = [
-  {
-    userId: "usr_1",
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    avatar: "https://ui-avatars.com/api/?name=John+Doe",
-    role: "admin",
-    isVerified: true,
-    createdAt: "2023-01-15T09:30:00Z",
-  },
-  {
-    userId: "usr_2",
-    firstName: "Jane",
-    lastName: "Smith",
-    email: "jane.smith@example.com",
-    avatar: "https://ui-avatars.com/api/?name=Jane+Smith",
-    role: "senior_employee",
-    isVerified: true,
-    createdAt: "2023-02-20T14:45:00Z",
-  },
-  {
-    userId: "usr_3",
-    firstName: "Robert",
-    lastName: "Johnson",
-    email: "robert.johnson@example.com",
-    avatar: "https://ui-avatars.com/api/?name=Robert+Johnson",
-    role: "assigned_employee",
-    isVerified: false,
-    createdAt: "2023-03-10T11:15:00Z",
-  },
-  {
-    userId: "usr_4",
-    firstName: "Emily",
-    lastName: "Williams",
-    email: "emily.williams@example.com",
-    avatar: "https://ui-avatars.com/api/?name=Emily+Williams",
-    role: "assigned_employee",
-    isVerified: true,
-    createdAt: "2023-04-05T16:20:00Z",
-  },
-  {
-    userId: "usr_5",
-    firstName: "Michael",
-    lastName: "Brown",
-    email: "michael.brown@example.com",
-    avatar: "https://ui-avatars.com/api/?name=Michael+Brown",
-    role: "senior_employee",
-    isVerified: true,
-    createdAt: "2023-05-12T10:00:00Z",
-  },
-  {
-    userId: "usr_6",
-    firstName: "Sarah",
-    lastName: "Davis",
-    email: "sarah.davis@example.com",
-    avatar: "https://ui-avatars.com/api/?name=Sarah+Davis",
-    role: "assigned_employee",
-    isVerified: false,
-    createdAt: "2023-06-18T13:30:00Z",
-  },
-  {
-    userId: "usr_7",
-    firstName: "David",
-    lastName: "Miller",
-    email: "david.miller@example.com",
-    avatar: "https://ui-avatars.com/api/?name=David+Miller",
-    role: "admin",
-    isVerified: true,
-    createdAt: "2023-07-22T09:45:00Z",
-  },
-  {
-    userId: "usr_8",
-    firstName: "Jessica",
-    lastName: "Wilson",
-    email: "jessica.wilson@example.com",
-    avatar: "https://ui-avatars.com/api/?name=Jessica+Wilson",
-    role: "assigned_employee",
-    isVerified: true,
-    createdAt: "2023-08-30T15:10:00Z",
-  },
-]
+// Types
+interface Employee {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  isVerified: boolean;
+  createdAt: string;
+  avatar?: string;
+}
 
-// Helper function to format date
+interface EmployeeResponse {
+  success: boolean;
+  message: string;
+  data: {
+    employees: Employee[];
+    total: number;
+    pageNumber: number;
+    perPage: number;
+    totalPages: number;
+  };
+}
+
+// Helper functions
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  })
+  });
 }
 
-// Role badge styling
 function getRoleBadgeVariant(role: string) {
   switch (role) {
     case "admin":
-      return "success"
+      return "success";
     case "senior_employee":
-      return "default"
+      return "default";
     case "assigned_employee":
-      return "secondary"
+      return "secondary";
     default:
-      return "destructive"
+      return "destructive";
   }
 }
 
-// Format role display name
 function formatRoleName(role: string) {
   return role
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
-}
-
-// Column definition type
-type Column = {
-  id: string
-  label: string
-  sortable?: boolean
-  hidden?: boolean
+    .join(" ");
 }
 
 export default function EmployeeTable() {
-  // State for table functionality
-  const [filteredEmployees, setFilteredEmployees] = useState(employees)
-  const [emailFilter, setEmailFilter] = useState("")
-  const [roleFilter, setRoleFilter] = useState("all")
-  const [currentPage, setCurrentPage] = useState(0)
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
-  const [columnVisibility, setColumnVisibility] = useState({
-    name: true,
-    email: true,
-    role: true,
-    isVerified: true,
-    createdAt: true,
-    actions: true,
-  })
+  // State for employees data
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("");
+  const [pagination, setPagination] = useState({
+    pageNumber: 1,
+    perPage: 9,
+    total: 0,
+    totalPages: 0,
+  });
 
-  const pageSize = 5
+  // Fetch employees with search, filter, and pagination
+  const fetchEmployees = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
 
-  // Column definitions
-  const columns: Column[] = [
-    { id: "name", label: "Name", sortable: true },
-    { id: "email", label: "Email", sortable: true },
-    { id: "role", label: "Role", sortable: true },
-    { id: "isVerified", label: "Status", sortable: true },
-    { id: "createdAt", label: "Joined", sortable: true },
-    { id: "actions", label: "Actions" },
-  ]
+      // Add pagination params
+      params.append("pageNumber", pagination.pageNumber.toString());
+      params.append("perPage", pagination.perPage.toString());
 
-  // Apply filters and sorting
-  useEffect(() => {
-    let result = [...employees]
-
-    // Apply email filter
-    if (emailFilter) {
-      result = result.filter((employee) => employee.email.toLowerCase().includes(emailFilter.toLowerCase()))
-    }
-
-    // Apply role filter
-    if (roleFilter !== "all") {
-      result = result.filter((employee) => employee.role === roleFilter)
-    }
-
-    // Apply sorting
-    if (sortConfig) {
-      result.sort((a, b) => {
-        let aValue, bValue
-
-        if (sortConfig.key === "name") {
-          aValue = `${a.firstName} ${a.lastName}`
-          bValue = `${b.firstName} ${b.lastName}`
-        } else if (sortConfig.key === "email") {
-          aValue = a.email
-          bValue = b.email
-        } else if (sortConfig.key === "role") {
-          aValue = a.role
-          bValue = b.role
-        } else if (sortConfig.key === "isVerified") {
-          aValue = a.isVerified ? "1" : "0"
-          bValue = b.isVerified ? "1" : "0"
-        } else if (sortConfig.key === "createdAt") {
-          aValue = new Date(a.createdAt).getTime()
-          bValue = new Date(b.createdAt).getTime()
-        } else {
-          aValue = a[sortConfig.key as keyof typeof a] as string
-          bValue = b[sortConfig.key as keyof typeof b] as string
-        }
-
-        if (aValue < bValue) {
-          return sortConfig.direction === "asc" ? -1 : 1
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === "asc" ? 1 : -1
-        }
-        return 0
-      })
-    }
-
-    setFilteredEmployees(result)
-    setCurrentPage(0) // Reset to first page when filters change
-  }, [emailFilter, roleFilter, sortConfig])
-
-  // Handle sorting
-  const handleSort = (columnId: string) => {
-    setSortConfig((prevSortConfig) => {
-      if (prevSortConfig && prevSortConfig.key === columnId) {
-        return prevSortConfig.direction === "asc" ? { key: columnId, direction: "desc" } : null
+      // Add search and filter if they exist
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery);
       }
-      return { key: columnId, direction: "asc" }
-    })
-  }
 
-  // Toggle column visibility
-  const toggleColumnVisibility = (columnId: string) => {
-    setColumnVisibility((prev) => ({
+      if (roleFilter && roleFilter !== "all") {
+        params.append("filter", roleFilter);
+      }
+
+      const response = await Axios.get<EmployeeResponse>(
+        `${
+          env.BACKEND_BASE_URL
+        }/api/employee/get-all-employee?${params.toString()}`
+      );
+
+      if (response.data.success) {
+        setEmployees(response.data.data.employees);
+        setPagination({
+          pageNumber: response.data.data.pageNumber,
+          perPage: response.data.data.perPage,
+          total: response.data.data.total,
+          totalPages: response.data.data.totalPages,
+        });
+      } else {
+        toast.error("Failed to fetch employees data");
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      toast.error("An error occurred while fetching employees");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [pagination.pageNumber, pagination.perPage, searchQuery, roleFilter]);
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setPagination((prev) => ({
       ...prev,
-      [columnId]: !prev[columnId as keyof typeof prev],
-    }))
-  }
+      pageNumber: page,
+    }));
+  }, []);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredEmployees.length / pageSize)
-  const paginatedEmployees = filteredEmployees.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
+  // Handle search input change with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPagination((prev) => ({
+      ...prev,
+      pageNumber: 1, // Reset to first page on new search
+    }));
+  };
+
+  // Handle role filter change
+  const handleRoleFilterChange = (value: string) => {
+    setRoleFilter(value);
+    setPagination((prev) => ({
+      ...prev,
+      pageNumber: 1, // Reset to first page on new filter
+    }));
+  };
+
+  // Fetch employees on component mount and when search/filter/pagination changes
+  useEffect(() => {
+    const debounceFetch = setTimeout(() => {
+      fetchEmployees();
+    }, 300);
+
+    return () => clearTimeout(debounceFetch);
+  }, [fetchEmployees]);
+
+  // Generate pagination items
+  const renderPaginationItems = () => {
+    const items = [];
+
+    // Show max 5 page links
+    const maxPages = Math.min(5, pagination.totalPages);
+    let startPage = Math.max(1, pagination.pageNumber - 2);
+    let endPage = Math.min(pagination.totalPages, startPage + maxPages - 1);
+
+    // Adjust startPage if endPage is maxed out
+    if (endPage - startPage + 1 < maxPages) {
+      startPage = Math.max(1, endPage - maxPages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            href="#"
+            isActive={i === pagination.pageNumber}
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(i);
+            }}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
+  };
 
   return (
-    <Card>
+    <Card className="m-4">
       <CardContent className="pt-6">
+        {/* Search and Role Filter UI */}
         <div className="flex flex-col md:flex-row items-center justify-between py-4 gap-4">
           <div className="flex w-full md:w-auto items-center gap-2">
             <Input
-              placeholder="Search by email..."
-              value={emailFilter}
-              onChange={(e) => setEmailFilter(e.target.value)}
+              placeholder="Search by name..."
               className="max-w-sm"
+              value={searchQuery}
+              onChange={handleSearchChange}
             />
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <Select value={roleFilter} onValueChange={handleRoleFilterChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
@@ -264,145 +243,180 @@ export default function EmployeeTable() {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="senior_employee">Senior Employee</SelectItem>
-                <SelectItem value="assigned_employee">Assigned Employee</SelectItem>
+                <SelectItem value="assigned_employee">
+                  Assigned Employee
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {columns.map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={columnVisibility[column.id as keyof typeof columnVisibility]}
-                  onCheckedChange={() => toggleColumnVisibility(column.id)}
-                >
-                  {column.id === "name"
-                    ? "Name"
-                    : column.id === "isVerified"
-                      ? "Status"
-                      : column.id.charAt(0).toUpperCase() + column.id.slice(1)}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
+
+        {/* Employee Table */}
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                {columns.map((column) =>
-                  columnVisibility[column.id as keyof typeof columnVisibility] ? (
-                    <TableHead key={column.id}>
-                      {column.sortable ? (
-                        <Button variant="ghost" onClick={() => handleSort(column.id)} className="h-8 font-medium">
-                          {column.label}
-                          {sortConfig?.key === column.id && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                        </Button>
-                      ) : (
-                        column.label
-                      )}
-                    </TableHead>
-                  ) : null,
-                )}
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedEmployees.length > 0 ? (
-                paginatedEmployees.map((employee) => (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <div className="flex justify-center items-center">
+                      <ColorRing
+                        visible={true}
+                        height="80"
+                        width="80"
+                        colors={[
+                          "#e15b64",
+                          "#f47e60",
+                          "#f8b26a",
+                          "#abbd81",
+                          "#849b87",
+                        ]}
+                        ariaLabel="color-ring-loading"
+                        wrapperStyle={{}}
+                        wrapperClass="color-ring-wrapper"
+                      />
+                      Please wait...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : employees.length > 0 ? (
+                employees.map((employee) => (
                   <TableRow key={employee.userId}>
-                    {columnVisibility.name && (
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={employee.avatar} alt={`${employee.firstName} ${employee.lastName}`} />
-                            <AvatarFallback>
-                              {employee.firstName.charAt(0)}
-                              {employee.lastName ? employee.lastName.charAt(0) : ""}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="font-medium">{`${employee.firstName} ${employee.lastName}`}</div>
-                        </div>
-                      </TableCell>
-                    )}
-                    {columnVisibility.email && <TableCell>{employee.email}</TableCell>}
-                    {columnVisibility.role && (
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(employee.role)}>{formatRoleName(employee.role)}</Badge>
-                      </TableCell>
-                    )}
-                    {columnVisibility.isVerified && (
-                      <TableCell>
-                        <Badge variant={employee.isVerified ? "success" : "outline"}>
-                          {employee.isVerified ? "Verified" : "Pending"}
-                        </Badge>
-                      </TableCell>
-                    )}
-                    {columnVisibility.createdAt && <TableCell>{formatDate(employee.createdAt)}</TableCell>}
-                    {columnVisibility.actions && (
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(employee.userId)}>
-                              Copy user ID
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>View details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit employee</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Delete employee</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    )}
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage
+                            src={employee.avatar}
+                            alt={`${employee.firstName} ${employee.lastName}`}
+                          />
+                          <AvatarFallback>
+                            {employee.firstName.charAt(0)}
+                            {employee.lastName
+                              ? employee.lastName.charAt(0)
+                              : ""}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="font-medium">{`${employee.firstName} ${employee.lastName}`}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{employee.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={getRoleBadgeVariant(employee.role)}>
+                        {formatRoleName(employee.role)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={employee.isVerified ? "success" : "outline"}
+                      >
+                        {employee.isVerified ? "Verified" : "Pending"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(employee.createdAt)}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigator.clipboard.writeText(employee.userId)
+                            }
+                          >
+                            Copy user ID
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem>View details</DropdownMenuItem>
+                          <DropdownMenuItem>Edit employee</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            Delete employee
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={Object.values(columnVisibility).filter(Boolean).length}
-                    className="h-24 text-center"
-                  >
-                    No results.
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No employees found.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">{filteredEmployees.length} employee(s) total</div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
-              disabled={currentPage === 0}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-              disabled={currentPage >= totalPages - 1}
-            >
-              Next
-            </Button>
+
+        {/* Footer with Pagination */}
+        <div className="flex justify-between items-center space-x-2 py-6">
+          <div className="text-sm text-muted-foreground">
+            Showing <span className="font-medium">{employees.length}</span> of{" "}
+            <span className="font-medium">{pagination.total}</span> employees
           </div>
+
+          {pagination.totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination.pageNumber > 1) {
+                        handlePageChange(pagination.pageNumber - 1);
+                      }
+                    }}
+                    className={
+                      pagination.pageNumber <= 1
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                  />
+                </PaginationItem>
+
+                {renderPaginationItems()}
+
+                {pagination.totalPages > 5 &&
+                  pagination.pageNumber + 2 < pagination.totalPages && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination.pageNumber < pagination.totalPages) {
+                        handlePageChange(pagination.pageNumber + 1);
+                      }
+                    }}
+                    className={
+                      pagination.pageNumber >= pagination.totalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
-

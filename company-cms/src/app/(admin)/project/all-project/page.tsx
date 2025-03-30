@@ -21,6 +21,7 @@ import {
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import { Triangle } from 'react-loader-spinner'
+import Link from "next/link";
 
 // Define Project Type
 interface Project {
@@ -58,7 +59,7 @@ const AllProject: React.FC = () => {
       setLoading(false);
     }
   }, []);
-  
+ 
 
   useEffect(() => {
     fetchProjects();
@@ -105,6 +106,9 @@ const AllProject: React.FC = () => {
                   <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => console.log("Delete project", project.id)}>
+                      <Link href={`/project/details/${project.id}`}>Details</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => console.log("Edit project", project.id)}>
                       Edit
                     </DropdownMenuItem>

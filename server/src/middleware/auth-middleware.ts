@@ -34,7 +34,7 @@ export const verifyJWT = asyncHandler( async (
     // Fetch the user from the database
     const user = await db
       .select({
-        id: userTable.userId,
+        userId: userTable.userId,
         email: userTable.email,
         firstName: userTable.firstName,
         lastName: userTable.lastName,
