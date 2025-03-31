@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import axios, { type AxiosError } from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Form,
@@ -20,6 +20,8 @@ import { updateCompanySchema } from "@/schemas/update-company-schema";
 import { useRouter } from "next/navigation";
 import { env } from "@/config/env";
 import type { ApiResponse } from "@/types/api-success-type";
+import { Axios } from "@/config/axios";
+import { Triangle } from "react-loader-spinner";
 
 interface Company {
   id: string;
@@ -35,27 +37,15 @@ interface Company {
   };
 }
 
-function UpdateCompanyPage({ companyId }: { companyId: string }) {
+function UpdateCompanyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [company, setCompany] = useState<Company | null>(null);
   const router = useRouter();
 
-  // Fetch the company data for editing
-  // useEffect(() => {
-  //   const fetchCompany = async () => {
-  //     try {
-  //       const response = await axios.get(`${env.BACKEND_BASE_URL}/api/company/${companyId}`);
-  //       setCompany(response.data.data);
-  //     } catch (error) {
-  //       console.error("Error fetching company data:", error);
-  //     }
-  //   };
-  //   fetchCompany();
-  // }, [companyId]);
-
   const form = useForm<z.infer<typeof updateCompanySchema>>({
     resolver: zodResolver(updateCompanySchema),
-    defaultValues: company || {
+    defaultValues: {
       name: "",
       category: "",
       description: "",
@@ -69,17 +59,55 @@ function UpdateCompanyPage({ companyId }: { companyId: string }) {
     },
   });
 
+  const fetchCompanyDetails = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await Axios.get(`${env.BACKEND_BASE_URL}/api/company/get-company-details`);
+      if (response.data.success) {
+        const companyData = response.data.data;
+        setCompany(companyData);
+        
+        // Ensure all fields exist before updating form
+        const formData = {
+          name: companyData.name || "",
+          category: companyData.category || "",
+          description: companyData.description || "",
+          address: {
+            street: companyData.address?.street || "",
+            city: companyData.address?.city || "",
+            state: companyData.address?.state || "",
+            zipCode: companyData.address?.zipCode || "",
+            country: companyData.address?.country || "",
+          }
+        };
+        
+        // Reset form with the fetched data
+        form.reset(formData);
+      } else {
+        toast.error(response.data.message || "Failed to fetch company details");
+      }
+    } catch (error) {
+      console.error("Error fetching company details:", error);
+      toast.error("Error fetching company details");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [form]);
+
+  useEffect(() => {
+    fetchCompanyDetails();
+  }, [fetchCompanyDetails]);
+
   const onSubmit = async (data: z.infer<typeof updateCompanySchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.put(
-        `${env.BACKEND_BASE_URL}/api/company/update/${companyId}`,
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/company/update-company-details`,
         data
       );
       toast.success(response.data.message || "Company updated successfully!");
-      const updatedCompany = response.data.data;
       if (response.data.success) {
-        setCompany(updatedCompany);
+        setCompany(response.data.data);
         // router.push(`/company/${updatedCompany.id}`);
       }
     } catch (error) {
@@ -94,12 +122,25 @@ function UpdateCompanyPage({ companyId }: { companyId: string }) {
     }
   };
 
-  // if (!company) {
-  //   return <div>Loading...</div>;
-  // }
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <Triangle
+            visible={true}
+            height="80"
+            width="80"
+            color="#4fa94d"
+            ariaLabel="triangle-loading"
+            wrapperStyle={{}}
+            wrapperClass=""
+            />
+        
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen  flex flex-col items-center justify-center p-4 font-sans">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 font-sans">
       <div className="w-full max-w-4xl p-8 bg-white/80 dark:bg-slate-700/40 backdrop-blur-sm rounded-3xl shadow-xl border border-purple-100 dark:border-slate-600">
         <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-300 mb-8 text-center">
           Update Company
@@ -154,8 +195,8 @@ function UpdateCompanyPage({ companyId }: { companyId: string }) {
                   <Textarea
                     {...field}
                     placeholder="Enter a brief description of your company"
-                    rows={5} // Set the number of rows for the Textarea to make it taller
-                    className="rounded-xl bg-white dark:bg-slate-800  py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md w-full" // Added w-full to make it take full width
+                    rows={5}
+                    className="rounded-xl bg-white dark:bg-slate-800  py-3 px-4 border-purple-200 dark:border-slate-500 focus:border-purple-400 focus:ring focus:ring-purple-200 dark:focus:ring-purple-800/30 transition-all duration-300 shadow-sm hover:shadow-md w-full"
                   />
                   <FormMessage className="text-pink-500" />
                 </FormItem>

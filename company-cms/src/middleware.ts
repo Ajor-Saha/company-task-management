@@ -1,40 +1,45 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
+  const { pathname } = request.nextUrl;
 
-  // Define public paths where no authentication is required
-  const publicPaths = ['/sign-in', '/signup', '/verify', '/']
-  const isPublicPath = publicPaths.includes(path)
+  // List of paths that do not require authentication
+  const publicPaths = ["/sign-in", "/signup", "/verify"];
 
-  const token = request.cookies.get('accessToken')?.value || ''
+  // Allow API authentication endpoints without session validation
+  const apiAuthPaths = ["/api/auth/", "/api/auth/**"];
 
-  // If the user is already logged in (has a token) and trying to access a public path (like /sign-in or /signup),
-  // redirect them to the home page (/) only if they are not already on it.
-  if (isPublicPath && token && path !== '/') {
-    return NextResponse.redirect(new URL('/', request.nextUrl))
+  // Skip middleware for public paths or API authentication paths
+  if (
+    publicPaths.some((path) => pathname.startsWith(path)) ||
+    apiAuthPaths.some((path) => pathname.startsWith(path.replace("**", "")))
+  ) {
+    return NextResponse.next(); // No session validation for these paths
   }
 
-  // If the user is not logged in (no token) and trying to access a restricted path (not a public path),
-  // redirect them to /sign-in unless they are already on the sign-in page.
-  if (!isPublicPath && !token && path !== '/sign-in') {
-    return NextResponse.redirect(new URL('/sign-in', request.nextUrl))
+  // Check for token in cookies
+  const token = request.cookies.get("accessToken")?.value || "";
+
+  // Redirect to the login page if the token is invalid
+  if (!token) {
+    if (!pathname.startsWith("/sign-in")) {
+      // Prevent redirect loop for /login
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+    return NextResponse.next();
   }
 
-  // Allow the request to continue if none of the conditions matched
-  return NextResponse.next()
+  // Allow access if the token is valid
+  return NextResponse.next();
 }
 
 // Config to match specific paths for the middleware
 export const config = {
   matcher: [
-    '/',
-    '/sign-in',
-    '/signup',
-    '/verify',
-    '/dashboard',    // Example of private route
-    '/profile',      // Example of private route
-    // Add other private paths here
-  ]
-}
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
+  ],
+};
