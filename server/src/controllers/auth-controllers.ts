@@ -372,3 +372,56 @@ export const updateProfilePicture = asyncHandler(async (req: Request, res: Respo
     return res.status(500).json(new ApiResponse(500, null, 'Internal server error'));
   }
 });
+
+export const changePassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      // Ensure the authenticated user exists
+      const authUser = req.user;
+      if (!authUser) {
+        return res.status(401).json(new ApiResponse(401, {}, "Not authenticated"));
+      }
+
+      // Extract the fields from the request body
+      const { currentPassword, newPassword } = req.body;
+
+      // Validate required fields
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json(new ApiResponse(400, {}, "Current password and new password are required"));
+      }
+
+      // Check if user exists and is verified
+      const user = await db
+        .select()
+        .from(userTable)
+        .where(eq(userTable.userId, authUser.userId))
+        .limit(1);
+
+      if (!user.length || !user[0].isVerified) {
+        return res.status(400).json(new ApiResponse(400, {}, "User does not exist or is not verified"));
+      }
+
+      const existingUser = user[0];
+
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, existingUser.password);
+      if (!isMatch) {
+        return res.status(400).json(new ApiResponse(400, {}, "Current password is incorrect"));
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update the user's password
+      await db
+        .update(userTable)
+        .set({ password: hashedPassword })
+        .where(eq(userTable.userId, authUser.userId));
+
+      return res.status(200).json(new ApiResponse(200, {}, "Password updated successfully"));
+    } catch (error) {
+      console.error("Error updating password:", error);
+      return res.status(500).json(new ApiResponse(500, {}, "Error updating password"));
+    }
+  }
+);
