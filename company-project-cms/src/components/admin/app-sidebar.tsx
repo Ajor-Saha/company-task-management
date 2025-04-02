@@ -1,7 +1,21 @@
 "use client";
 
-import * as React from "react";
-import { GalleryVerticalEnd, Minus, Plus } from "lucide-react";
+import type * as React from "react";
+import {
+  Building2,
+  FolderKanban,
+  GalleryVerticalEnd,
+  KeyRound,
+  LayoutDashboard,
+  LayoutGrid,
+  List,
+  Minus,
+  Plus,
+  PlusCircle,
+  SettingsIcon,
+  UserCog,
+  Users,
+} from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -31,22 +45,60 @@ import Link from "next/link";
 // Sidebar Data
 const sidebarData = {
   navMain: [
-    
     {
       title: "Project",
-      url: "#",
+      url: "/project",
+      icon: <FolderKanban size={20} />,
       items: [
-        { title: "Add Project", url: "/project/add-project" },
-        { title: "Manage Project", url: "/project/manage-project" },
+        {
+          title: "Add Project",
+          url: "/project/add-project",
+          icon: <PlusCircle size={16} />,
+        },
+        {
+          title: "All Project",
+          url: "/project/all-project",
+          icon: <List size={16} />,
+        },
+        {
+          title: "Manage Project",
+          url: "/project/manage-project",
+          icon: <LayoutGrid size={16} />,
+        },
       ],
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
+      icon: <SettingsIcon size={20} />,
       items: [
-        { title: "Account", url: "/settings/account-manage" },
-        { title: "Company Manage", url: "/settings/company-manage" },
-        { title: "Password Manage", url: "/settings/password-manage" },
+        {
+          title: "Account",
+          url: "/settings/account-manage",
+          icon: <UserCog size={16} />,
+        },
+        {
+          title: "Password Manage",
+          url: "/settings/password-manage",
+          icon: <KeyRound size={16} />,
+        },
+      ],
+    },
+    {
+      title: "Employee",
+      url: "#",
+      icon: <Users size={20} />,
+      items: [
+        {
+          title: "Add Employee",
+          url: "/employee/add-employee",
+          icon: <PlusCircle size={16} />,
+        },
+        {
+          title: "Show Employees",
+          url: "/employee/show-employees",
+          icon: <List size={16} />,
+        },
       ],
     },
   ],
@@ -74,28 +126,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   return (
-    <Sidebar {...props}>
+    <Sidebar {...props} 
+    className="[&>[data-sidebar=sidebar]]:bg-slate-100 
+    dark:[&>[data-sidebar=sidebar]]:bg-[#191919]
+    [&>[data-sidebar=sidebar]]:text-gray-800
+    dark:[&>[data-sidebar=sidebar]]:text-white"
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <GalleryVerticalEnd className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">Company Cms</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <Link href="/dashboard" className="text-sm px-2 bg-slate-100 py-2 hover:bg-slate-300 dark:bg-gray-900 dark:hover:bg-gray-700">Dashboard</Link>
-        </SidebarGroup>
+        
         <SidebarGroup>
           <SidebarMenu>
             {sidebarData.navMain.map((item, index) => (
@@ -107,6 +162,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
+                      {item.icon && <span className="mr-2">{item.icon}</span>}
                       {item.title}
                       <Plus className="ml-auto group-data-[state=open]/collapsible:hidden" />
                       <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden" />
@@ -122,7 +178,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               asChild
                               isActive={pathname === subItem.url}
                             >
-                              <a href={subItem.url}>{subItem.title}</a>
+                              <a
+                                href={subItem.url}
+                                className="flex items-center gap-2"
+                              >
+                                {subItem.icon && <span>{subItem.icon}</span>}
+                                {subItem.title}
+                              </a>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}

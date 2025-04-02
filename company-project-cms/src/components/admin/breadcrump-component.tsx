@@ -12,16 +12,19 @@ import ThemeToggle from "../header/ThemeToggle";
 const breadcrumbMap: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/project/add-project": "Project > Add Project",
+  "/project/all-project": "Project > All Project",
   "/project/manage-project": "Project > Manage Project",
   "/settings/account-manage": "Settings > Account Manage",
   "/settings/company-manage": "Settings > Company Manage",
+  "/employee/add-employee": "Employee > Add Employee",
+  "/employee/show-employees": "Employee > Show Employees",
 };
 export function BreadcrumbComponent() {
   const pathname = usePathname();
   const breadcrumbTitle = breadcrumbMap[pathname] || "Dashboard";
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 ">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
       <Breadcrumb>
