@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Upload, Trash2, Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,47 +21,96 @@ import {
 import { formSchema } from "@/schemas/update-profile-schema";
 import { env } from "@/config/env";
 import type { ApiResponse } from "@/types/api-success-type";
+import useAuthStore from "@/store/store";
+import { Axios } from "@/config/axios";
+
+
 interface profile {
   firstName: string;
   lastName: string;
   email: string;
   avatar?: any;
 }
-type ProfileFormValues = z.infer<typeof formSchema>;
+
+
 
 export default function ProfileSettings() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [profile, setProfile] = useState<profile | null>(null);
+  const { user, updateUser } = useAuthStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+ 
 
-  const form = useForm<ProfileFormValues>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: profile || {
-      firstName: "",
-      lastName: "",
-      email: "shanto@gmail.com",
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      email: user?.email || "",
     },
   });
 
-  // Fetch the user's profile on mount
-  // useEffect(() => {
-  //   const fetchProfile = async () => {
-  //     try {
-  //       const response = await axios.get(`${env.BACKEND_BASE_URL}/api/profile`);
-  //       setProfile(response.data.data); // Set profile data
-  //     } catch (error) {
-  //       console.error("Error fetching profile:", error);
-  //       toast.error("Failed to load profile data.");
-  //     }
-  //   };
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  //   fetchProfile();
-  // }, []);
+    setIsUploadingPhoto(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/auth/update-profile-picture`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      if (response.data.data) {
+        // Update the user's avatar in the store or state
+        setProfile((prev) => prev ? { ...prev, avatar: response.data.data.avatar } : null);
+        updateUser({ avatar: response.data.data.avatar });
+      }
+      toast.success('Profile picture updated successfully!');
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      const axiosError = error as AxiosError<ApiResponse>;
+      const errorMessage = axiosError.response?.data.message ?? 'An error occurred while updating the profile picture.';
+      toast.error(errorMessage);
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    setIsUploadingPhoto(true);
+    try {
+      await Axios.delete(`${env.BACKEND_BASE_URL}/api/update-profile-picture`);
+      setProfile((prev) => prev ? { ...prev, avatar: undefined } : null);
+      toast.success('Profile picture deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting profile picture:', error);
+      const axiosError = error as AxiosError<ApiResponse>;
+      const errorMessage = axiosError.response?.data.message ?? 'An error occurred while deleting the profile picture.';
+      toast.error(errorMessage);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   // Handle form submission
-  const onSubmit = async (data: ProfileFormValues) => {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.put(
+      const response = await Axios.put(
         `${env.BACKEND_BASE_URL}/api/profile/update`,
         data
       );
@@ -82,10 +131,9 @@ export default function ProfileSettings() {
     }
   };
 
-  // If the profile is not loaded yet, show loading spinner
-  // if (!profile) {
-  //   return <div>Loading...</div>;
-  // }
+  
+
+ 
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -113,7 +161,7 @@ export default function ProfileSettings() {
                       <div className="w-24 h-24 rounded-full overflow-hidden border border-border">
                         <Image
                           // src={profile.photo ||"/asset/mysterious-mafia-man-smoking-cigarette_52683-34828.avif"}
-                          src="/asset/mysterious-mafia-man-smoking-cigarette_52683-34828.avif"
+                          src={user?.avatar || "/asset/mysterious-mafia-man-smoking-cigarette_52683-34828.avif"}
                           alt="Profile"
                           width={96}
                           height={96}
@@ -122,18 +170,42 @@ export default function ProfileSettings() {
                       </div>
                     </div>
                     <div className="space-y-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                      />
                       <Button
                         variant="secondary"
                         className="flex items-center gap-2 hover:text-green-500"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingPhoto}
                       >
-                        <Upload className="h-4 w-4" />
-                        Change photo
+                        {isUploadingPhoto ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            Change photo
+                          </>
+                        )}
                       </Button>
                       <Button
                         variant="outline"
                         className="flex items-center gap-2 text-destructive"
+                        onClick={handleDeletePhoto}
+                        disabled={isUploadingPhoto}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {isUploadingPhoto ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                         Delete
                       </Button>
                       <p className="text-xs text-muted-foreground">

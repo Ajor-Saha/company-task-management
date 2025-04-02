@@ -28,6 +28,8 @@ interface AuthState {
   setUser: (user: User) => void;
   setAccessToken: (token: string) => void;
   getLoggedInUser: () => User | null; // Getter for logged-in user
+  updateUser: (updates: Partial<Pick<User, "firstName" | "lastName" | "avatar">>) => void;
+
 }
 
 const useAuthStore = create<AuthState>()(
@@ -63,6 +65,11 @@ const useAuthStore = create<AuthState>()(
         },
         getLoggedInUser: () => {
           return get().user; // Return the current user from the state
+        },
+        updateUser: (updates) => {
+          set((state) => ({
+            user: state.user ? { ...state.user, ...updates } : null,
+          }));
         },
       }),
       {

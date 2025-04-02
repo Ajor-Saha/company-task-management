@@ -1,10 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -44,14 +42,14 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const response = await Axios.post(
-        `${env.BACKEND_BASE_URL}/api/auth/signin`,
+        `${env.BACKEND_BASE_URL}/api/employee/employee-login`,
         data
       );
       toast.success(response.data.message || "Login Successful");
       console.log("Login Successful:", response.data);
       login(response.data.data, response.data.accessToken);
       
-      router.push("/dashboard"); // Redirect to the dashboard after login
+      router.push("/"); // Redirect to the dashboard after login
     } catch (error) {
       console.error("Login Error:", error);
       const axiosError = error as AxiosError<{ message: string }>;
@@ -64,7 +62,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10">
+    <div className="flex min-h-screen flex-col items-center justify-center  p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-3xl">
         <div className="flex flex-col gap-6">
           <Card className="overflow-hidden">
@@ -150,7 +148,7 @@ export default function LoginPage() {
                 <div className="text-center text-sm">
                   Don&apos;t have an account?{" "}
                   <Link
-                    href="/create-new-company"
+                    href="/sign-up"
                     className="underline underline-offset-4"
                   >
                     Register
@@ -158,13 +156,13 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="relative hidden bg-muted md:block">
+              <div className="relative hidden  md:block">
                 <Image
-                  src="/asset/signup-pic.svg"
+                  src="/asset/SignIn.jpg"
                   alt="Image"
                   width={1000}
                   height={800}
-                  className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+                  className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.5] "
                 />
               </div>
             </CardContent>
