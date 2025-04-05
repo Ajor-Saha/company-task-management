@@ -22,6 +22,20 @@
       "when": 1742840840099,
       "tag": "0002_aromatic_aqueduct",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1743873212479,
+      "tag": "0003_panoramic_doctor_strange",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1743873735338,
+      "tag": "0004_third_marrow",
+      "breakpoints": true
     }
   ]
 }

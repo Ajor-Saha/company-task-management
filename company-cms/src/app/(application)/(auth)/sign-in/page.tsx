@@ -48,7 +48,7 @@ export default function LoginPage() {
         data
       );
       toast.success(response.data.message || "Login Successful");
-      console.log("Login Successful:", response.data);
+     // console.log("Login Successful:", response.data);
       login(response.data.data, response.data.accessToken);
       
       router.push("/dashboard"); // Redirect to the dashboard after login

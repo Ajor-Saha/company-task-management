@@ -10,6 +10,7 @@ export const projectStatusEnum = pgEnum("project_status", [
   "hold",
   "review",
   "completed",
+  "in-progress",
 ]);
 
 export const projectTable = pgTable("tbl_project", {
@@ -21,11 +22,14 @@ export const projectTable = pgTable("tbl_project", {
   companyId: text("company_id")
     .references(() => companyTable.id, { onDelete: "cascade" })
     .notNull(),
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .default(sql`current_timestamp`)
     .$onUpdate(() => new Date()),
 });
+
 
 export const projectsRelations = relations(projectTable, ({ one, many }) => ({
   company: one(companyTable, {
