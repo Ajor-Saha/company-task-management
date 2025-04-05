@@ -425,3 +425,50 @@ export const changePassword = asyncHandler(
     }
   }
 );
+
+export const resetPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+
+      // Validate required fields
+      if (!email || !password || email.trim() === "" || password.trim() === "") {
+        return res.status(400).json(
+          new ApiResponse(400, {}, "Email and new password are required")
+        );
+      }
+
+      // Check if user exists and is verified
+      const user = await db
+        .select()
+        .from(userTable)
+        .where(eq(userTable.email, email))
+        .limit(1);
+
+      if (!user.length || !user[0].isVerified) {
+        return res.status(404).json(
+          new ApiResponse(404, {}, "User not found or not verified")
+        );
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Update the user's password
+      await db
+        .update(userTable)
+        .set({ password: hashedPassword })
+        .where(eq(userTable.email, email));
+
+      return res.status(200).json(
+        new ApiResponse(200, {}, "Password reset successfully")
+      );
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      return res.status(500).json(
+        new ApiResponse(500, {}, "Error resetting password")
+      );
+    }
+  }
+);
+

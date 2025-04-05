@@ -440,3 +440,64 @@ export const assignEmployeeToProject = asyncHandler(async (req: Request, res: Re
     res.status(500).json(new ApiResponse(500, null, "Internal server error"));
   }
 })
+
+export const updateProjectStatus = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const { status } = req.body;
+    const companyId = req.user?.companyId;
+
+    // Validate required fields
+    if (!projectId || !status) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "Project ID and status are required"));
+    }
+
+    // Validate status value against enum
+    const validStatuses = ["to-do", "in-progress", "review", "completed", "hold"];
+    if (!validStatuses.includes(status)) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "Invalid status value"));
+    }
+
+    // Update the project status
+    const [updatedProject] = await db
+      .update(projectTable)
+      .set({ 
+        status: status,
+        updatedAt: new Date() 
+      })
+      .where(
+        and(
+          eq(projectTable.id, projectId),
+          eq(projectTable.companyId, companyId as string)
+        )
+      )
+      .returning();
+
+    if (!updatedProject) {
+      return res
+        .status(404)
+        .json(
+          new ApiResponse(
+            404,
+            {},
+            "Project not found or you are not authorized to update it"
+          )
+        );
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, updatedProject, "Project status updated successfully")
+      );
+  } catch (error) {
+    console.error("Error updating project status:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+});

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -8,185 +8,147 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChevronDown, Users, UserPlus, X, EyeClosedIcon, EyeOffIcon, EyeIcon } from "lucide-react"
 import { format } from "date-fns"
+import { Axios } from "@/config/axios"
+import { env } from "@/config/env"
+import axios from "axios"
 
-// Mock data for all available employees
-const allEmployees = [
-  { id: 1, name: "John Doe", role: "UI Designer" },
-  { id: 2, name: "Jane Smith", role: "Frontend Developer" },
-  { id: 3, name: "Mike Johnson", role: "Backend Developer" },
-  { id: 4, name: "Sarah Williams", role: "Project Manager" },
-  { id: 5, name: "Alex Brown", role: "QA Tester" },
-  { id: 6, name: "David Clark", role: "Mobile Developer" },
-  { id: 7, name: "Emily Davis", role: "UI/UX Designer" },
-  { id: 8, name: "Robert Wilson", role: "Systems Analyst" },
-  { id: 9, name: "Lisa Thompson", role: "Database Administrator" },
-  { id: 10, name: "Kevin Martin", role: "Data Analyst" },
-  { id: 11, name: "Thomas Anderson", role: "Security Specialist" },
-  { id: 12, name: "Jennifer Lee", role: "Network Administrator" },
-  { id: 13, name: "Paul Roberts", role: "Compliance Officer" },
-  { id: 14, name: "Maria Garcia", role: "Content Strategist" },
-  { id: 15, name: "James Wilson", role: "DevOps Engineer" },
-]
+interface Employee {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  isVerified: boolean;
+  createdAt: string;
+  avatar?: string;
+}
 
-// Mock data for projects
-const initialProjects = [
-  {
-    id: 1,
-    name: "Website Redesign",
-    totalTasks: 24,
-    totalAssignedEmployees: 5,
-    createdAt: new Date("2023-01-15"),
-    finalAt: new Date("2023-04-30"),
-    assignedEmployees: [
-      { id: 1, name: "John Doe", role: "UI Designer" },
-      { id: 2, name: "Jane Smith", role: "Frontend Developer" },
-      { id: 3, name: "Mike Johnson", role: "Backend Developer" },
-      { id: 4, name: "Sarah Williams", role: "Project Manager" },
-      { id: 5, name: "Alex Brown", role: "QA Tester" },
-    ],
-    details: {
-      description: "Complete redesign of company website with new branding",
-      progress: "75%",
-      status: "In Progress",
-      priority: "High",
-    },
-  },
-  {
-    id: 2,
-    name: "Mobile App Development",
-    totalTasks: 36,
-    totalAssignedEmployees: 4,
-    createdAt: new Date("2023-02-10"),
-    finalAt: new Date("2023-06-15"),
-    assignedEmployees: [
-      { id: 2, name: "Jane Smith", role: "Frontend Developer" },
-      { id: 3, name: "Mike Johnson", role: "Backend Developer" },
-      { id: 6, name: "David Clark", role: "Mobile Developer" },
-      { id: 7, name: "Emily Davis", role: "UI/UX Designer" },
-    ],
-    details: {
-      description: "Develop a cross-platform mobile application",
-      progress: "50%",
-      status: "In Progress",
-      priority: "Medium",
-    },
-  },
-  {
-    id: 3,
-    name: "CRM Integration",
-    totalTasks: 18,
-    totalAssignedEmployees: 3,
-    createdAt: new Date("2023-03-05"),
-    finalAt: new Date("2023-05-20"),
-    assignedEmployees: [
-      { id: 3, name: "Mike Johnson", role: "Backend Developer" },
-      { id: 8, name: "Robert Wilson", role: "Systems Analyst" },
-      { id: 9, name: "Lisa Thompson", role: "Database Administrator" },
-    ],
-    details: {
-      description: "Integrate new CRM system with existing infrastructure",
-      progress: "30%",
-      status: "In Progress",
-      priority: "High",
-    },
-  },
-  {
-    id: 4,
-    name: "Data Migration",
-    totalTasks: 12,
-    totalAssignedEmployees: 2,
-    createdAt: new Date("2023-04-01"),
-    finalAt: new Date("2023-05-15"),
-    assignedEmployees: [
-      { id: 9, name: "Lisa Thompson", role: "Database Administrator" },
-      { id: 10, name: "Kevin Martin", role: "Data Analyst" },
-    ],
-    details: {
-      description: "Migrate data from legacy systems to new platform",
-      progress: "90%",
-      status: "Almost Complete",
-      priority: "Medium",
-    },
-  },
-  {
-    id: 5,
-    name: "Security Audit",
-    totalTasks: 8,
-    totalAssignedEmployees: 3,
-    createdAt: new Date("2023-04-15"),
-    finalAt: new Date("2023-05-30"),
-    assignedEmployees: [
-      { id: 11, name: "Thomas Anderson", role: "Security Specialist" },
-      { id: 12, name: "Jennifer Lee", role: "Network Administrator" },
-      { id: 13, name: "Paul Roberts", role: "Compliance Officer" },
-    ],
-    details: {
-      description: "Conduct comprehensive security audit of all systems",
-      progress: "20%",
-      status: "Just Started",
-      priority: "Critical",
-    },
-  },
-]
+interface EmployeeResponse {
+  success: boolean;
+  message: string;
+  data: {
+    employees: Employee[];
+    total: number;
+    pageNumber: number;
+    perPage: number;
+    totalPages: number;
+  };
+}
+
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  budget: number;
+  status: string;
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
+  assignedEmployees?: Employee[];
+  totalTasks?: number;
+}
 
 export default function ProjectTable() {
-  const [projects, setProjects] = useState(initialProjects)
-  const [selectedProject, setSelectedProject] = useState<(typeof projects)[number] | null>(null)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null)
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const openAssignDialog = (project: (typeof projects)[number]) => {
+  const openAssignDialog = (project: Project) => {
     setSelectedProject(project)
     setDialogOpen(true)
     setStatusMessage(null)
   }
 
-  const assignEmployeeToProject = (employee: (typeof allEmployees)[number]) => {
-    if (!selectedProject) return
+  const assignEmployeeToProject = async (employee: Employee) => {
+    if (!selectedProject) return;
 
-    // Check if employee is already assigned to this project
-    const isAlreadyAssigned = selectedProject.assignedEmployees.some((emp) => emp.id === employee.id)
+    try {
+      // Make API call to assign employee to project
+      const response = await Axios.post(`${env.BACKEND_BASE_URL}/api/project/assign-employee`, {
+        projectId: selectedProject.id,
+        employeeId: employee.userId
+      });
 
-    if (isAlreadyAssigned) {
+      if (response.data?.success) {
+        setStatusMessage({
+          text: `${employee.firstName} ${employee.lastName} has been assigned to ${selectedProject.name}.`,
+          type: "success",
+        });
+        
+        // Refresh project data after successful assignment
+        fetchProjects();
+      } else {
+        setStatusMessage({
+          text: response.data?.message || "Failed to assign employee.",
+          type: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error assigning employee:", error);
       setStatusMessage({
-        text: `${employee.name} is already assigned to this project.`,
+        text: "Failed to assign employee to project.",
         type: "error",
-      })
-      return
+      });
     }
 
-    // Update the projects state with the new employee
-    setProjects(
-      projects.map((project) => {
-        if (project.id === selectedProject.id) {
-          const updatedEmployees = [...project.assignedEmployees, employee]
-          return {
-            ...project,
-            assignedEmployees: updatedEmployees,
-            totalAssignedEmployees: updatedEmployees.length,
-          }
-        }
-        return project
-      }),
-    )
-
-    // Close the dialog
-    setDialogOpen(false)
-
-    // Set success message
-    setStatusMessage({
-      text: `${employee.name} has been assigned to ${selectedProject.name}.`,
-      type: "success",
-    })
+    setDialogOpen(false);
   }
 
   // Filter out employees already assigned to the selected project
   const getAvailableEmployees = () => {
-    if (!selectedProject) return []
+    if (!selectedProject || !selectedProject.assignedEmployees) return allEmployees;
 
-    const assignedIds = selectedProject.assignedEmployees.map((emp) => emp.id)
-    return allEmployees.filter((emp) => !assignedIds.includes(emp.id))
+    const assignedIds = selectedProject.assignedEmployees.map((emp) => emp.userId);
+    return allEmployees.filter((emp) => !assignedIds.includes(emp.userId));
   }
+
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await Axios.get(`${env.BACKEND_BASE_URL}/api/project/get-admin-projects`);
+      if (response.data?.success) {
+        setAllProjects(response.data.data);
+      } else {
+        console.error("API Error Message:", response.data.message);
+      }
+    } catch (error) {
+      console.error("FetchProjects Error:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Axios Error Details:", error.response?.data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchEmployees = useCallback(async () => {
+    try {
+      const response = await Axios.get(`${env.BACKEND_BASE_URL}/api/employee/get-all-employee`);
+      if (response.data?.success) {
+        setAllEmployees(response.data.data.employees);
+      } else {
+        console.error("API Error Message:", response.data.message);
+      }
+    } catch (error) {
+      console.error("FetchEmployees Error:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Axios Error Details:", error.response?.data);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+    fetchEmployees();
+  }, [fetchProjects, fetchEmployees]);
+
+  
+ 
+  
 
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">
@@ -226,20 +188,20 @@ export default function ProjectTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projects.map((project) => (
+            {allProjects.map((project) => (
               <TableRow key={project.id}>
                 <TableCell className="font-medium">{project.name}</TableCell>
-                <TableCell className="hidden md:table-cell text-center">{project.totalTasks}</TableCell>
+                <TableCell className="hidden md:table-cell text-center">10</TableCell>
                 <TableCell className="text-center">
                   <Badge variant="outline" className="whitespace-nowrap">
-                    {project.totalAssignedEmployees} employees
+                    5 employees
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-center">
                   {format(project.createdAt, "MMM dd, yyyy")}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-center">
-                  {format(project.finalAt, "MMM dd, yyyy")}
+                  {format(project.updatedAt, "MMM dd, yyyy")}
                 </TableCell>
                 <TableCell className="text-center">
                   <DropdownMenu>
@@ -288,8 +250,8 @@ export default function ProjectTable() {
                     </TableHeader>
                     <TableBody>
                       {getAvailableEmployees().map((employee) => (
-                        <TableRow key={employee.id}>
-                          <TableCell className="font-medium">{employee.name}</TableCell>
+                        <TableRow key={employee.userId}>
+                          <TableCell className="font-medium">{employee.firstName} {employee.lastName}</TableCell>
                           <TableCell>{employee.role}</TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" onClick={() => assignEmployeeToProject(employee)}>
