@@ -18,8 +18,7 @@ export const taskTable = pgTable("tbl_task", {
   description: text("description"),
   status: taskStatusEnum("status").default("to-do"),
   projectId: text("project_id")
-    .references(() => projectTable.id, { onDelete: "cascade" })
-    .notNull(),
+    .references(() => projectTable.id, { onDelete: "cascade" }),
   assignedTo: text("assigned_to")
     .references(() => userTable.userId, { onDelete: "cascade" })
     .notNull(),
@@ -33,6 +32,7 @@ export const tasksRelations = relations(taskTable, ({ one }) => ({
   project: one(projectTable, {
     fields: [taskTable.projectId],
     references: [projectTable.id],
+    relationName: "optional_project",
   }),
   // Each task is assigned to one user
   assignedUser: one(userTable, {

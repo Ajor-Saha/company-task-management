@@ -22,7 +22,6 @@ import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import { Triangle } from 'react-loader-spinner'
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 // Define Project Type
 interface Project {
@@ -36,10 +35,9 @@ interface Project {
   updatedAt: string;
 }
 
-const AllProject = () => {
+const AllProject: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -108,10 +106,15 @@ const AllProject = () => {
                   <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push(`/project/details/${project.id}`)}>
-                      Details
+                    <DropdownMenuItem onClick={() => console.log("Delete project", project.id)}>
+                      <Link href={`/project/details/${project.id}`}>Details</Link>
                     </DropdownMenuItem>
-                    
+                    <DropdownMenuItem onClick={() => console.log("Edit project", project.id)}>
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => console.log("Delete project", project.id)}>
+                      Delete
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
