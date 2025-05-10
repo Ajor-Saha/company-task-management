@@ -6,6 +6,7 @@ import { userTable } from "./tbl-user";
 // Define the task status enum
 export const taskStatusEnum = pgEnum("task_status", [
     "to-do",
+    "in-progress",
     "hold",
     "review",
     "completed",
@@ -22,6 +23,7 @@ export const taskTable = pgTable("tbl_task", {
   assignedTo: text("assigned_to")
     .references(() => userTable.userId, { onDelete: "cascade" })
     .notNull(),
+  endDate: timestamp("end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .default(sql`current_timestamp`)

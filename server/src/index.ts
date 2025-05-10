@@ -7,6 +7,7 @@ import company_router from "./routes/company-route";
 import user_router from "./routes/auth-route";
 import project_router from "./routes/project-route";
 import employee_router from "./routes/employee-route";
+import task_router from "./routes/task-route";
 dotenv.config();
 
 const app = express();
@@ -29,6 +30,7 @@ app.use("/api/auth", user_router);
 app.use("/api/company", company_router);
 app.use("/api/project", project_router);
 app.use("/api/employee", employee_router);
+app.use("/api/task", task_router);
 
 app.get("/", (req, res) => {
   res.send("Company & task server is running");

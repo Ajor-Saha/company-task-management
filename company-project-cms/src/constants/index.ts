@@ -38,3 +38,80 @@ export const assignedToMe = {
   ],
   hold: [{ id: 5, title: "Database Schema Finalization" }],
 };
+
+export const tasks = [
+    { id: 1, title: "Setup project repository", completed: true },
+    { id: 2, title: "Design database schema", completed: false },
+    { id: 3, title: "Implement auth module", completed: false },
+  ];
+
+export interface Subtask {
+  name: string;
+  assignee: string;
+  priority: string;
+  dueDate: string;
+  status: string;
+}
+
+
+export const initialSubtasks: Subtask[] = [
+  {
+    name: 'React Testing Library "Crash Course" by Traversy Media',
+    assignee: "",
+    priority: "",
+    dueDate: "",
+    status: "To-do",
+  },
+  {
+    name: "Online Material: HONO TESTING GUIDE",
+    assignee: "",
+    priority: "",
+    dueDate: "",
+    status: "To-do",
+  },
+  {
+    name: "Follow Full stack serverless course",
+    assignee: "",
+    priority: "",
+    dueDate: "",
+    status: "To-do",
+  },
+  {
+    name: "Learnathon-Auth Module Complete - End to End",
+    assignee: "",
+    priority: "",
+    dueDate: "",
+    status: "To-do",
+  },
+  {
+    name: "Learn GEN AI",
+    assignee: "",
+    priority: "",
+    dueDate: "",
+    status: "To-do",
+  },
+];
+
+export const statusColors = {
+  'to-do': 'bg-gray-100 dark:bg-gray-800',
+  'in-progress': 'bg-blue-100 dark:bg-blue-800/30',
+  'completed': 'bg-green-100 dark:bg-green-800/30',
+  'review': 'bg-yellow-100 dark:bg-yellow-800/30',
+  'hold': 'bg-red-100 dark:bg-red-800/30'
+};
+
+export interface User {
+  id: string;
+  name: string;
+  profilePic: string;
+}
+
+export const users: User[] = [
+  { id: "1", name: "John Doe", profilePic: "https://via.placeholder.com/40" },
+  { id: "2", name: "Jane Smith", profilePic: "https://via.placeholder.com/40" },
+  {
+    id: "3",
+    name: "Alice Johnson",
+    profilePic: "https://via.placeholder.com/40",
+  },
+];

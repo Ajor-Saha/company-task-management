@@ -21,6 +21,7 @@ import {
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import { Triangle } from 'react-loader-spinner'
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 // Define Project Type
@@ -38,12 +39,13 @@ interface Project {
 const AllProject: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
       const response = await Axios.get(`${env.BACKEND_BASE_URL}/api/project/get-admin-projects`);
-      console.log("API Response:", response.data); // Debugging line
+      
   
       if (response.data?.success) {
         setProjects(response.data.data);
@@ -95,7 +97,9 @@ const AllProject: React.FC = () => {
             <Card key={project.id} className="relative shadow-lg">
               <CardHeader className="flex justify-between items-center">
                 <CardTitle className="text-lg font-semibold text-foreground">
-                  {project.name}
+                  <Link href={`/project/details/${project.id}`}>
+                    {project.name}
+                  </Link>
                 </CardTitle>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -106,8 +110,8 @@ const AllProject: React.FC = () => {
                   <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => console.log("Delete project", project.id)}>
-                      <Link href={`/project/details/${project.id}`}>Details</Link>
+                    <DropdownMenuItem onClick={() => router.push(`//project/details/${project.id}`)}>
+                      Details
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => console.log("Edit project", project.id)}>
                       Edit
