@@ -277,6 +277,54 @@ export const getAllEmployees = asyncHandler(
   }
 );
 
+export const getCompanyEmployees = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const companyId = req.user.companyId;
+
+      // Check if the user is an admin and has a companyId
+      if (!companyId) {
+        return res.status(401).json(
+          new ApiResponse(
+            401,
+            {},
+            "Unauthorized: You are not an admin or company not found"
+          )
+        );
+      }
+
+      // Fetch all employees for the company
+      const employees = await db
+        .select({
+          userId: userTable.userId,
+          firstName: userTable.firstName,
+          lastName: userTable.lastName,
+          avatar: userTable.avatar,
+          email: userTable.email,
+          role: userTable.role,
+          isVerified: userTable.isVerified,
+          createdAt: userTable.createdAt,
+        })
+        .from(userTable)
+        .where(eq(userTable.companyId, companyId))
+        .orderBy(userTable.createdAt);
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          employees,
+          "Employees retrieved successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, null, "Internal server error"));
+    }
+  }
+);
+
 export const updateEmployee = asyncHandler(
   async (req: Request, res: Response) => {
     try {
