@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Menu, X, User, LogOut, Settings } from "lucide-react"
+import { Menu, X, User, LogOut, Settings, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import useAuthStore from "@/store/store"
@@ -162,7 +162,9 @@ function Header() {
               <Button className="hidden md:block rounded-full">
                 <Link href="/sign-in">Login</Link>
               </Button>
-            )}
+            )} 
+
+            
 
             {/* Theme Toggle Button */}
             <ThemeToggle />

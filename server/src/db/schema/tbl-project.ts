@@ -4,6 +4,7 @@ import { companyTable } from "./tbl-company";
 // Import join table and task table for additional relations
 import { projectAssignmentsTable } from "./tbl-project-assignments";
 import { taskTable } from "./tbl-task";
+import { messageTable } from "./tbl-message";
 
 export const projectStatusEnum = pgEnum("project_status", [
   "to-do",
@@ -40,4 +41,5 @@ export const projectsRelations = relations(projectTable, ({ one, many }) => ({
   assignedEmployees: many(projectAssignmentsTable),
   // A project can have many tasks
   tasks: many(taskTable),
+  messages: many(messageTable),
 }));

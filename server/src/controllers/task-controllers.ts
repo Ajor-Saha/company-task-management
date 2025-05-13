@@ -118,29 +118,32 @@ export const createPersonalTask = asyncHandler(
           .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
       }
 
-      const { name, description, assignedTo } = req.body;
+      const { name, description, endDate } = req.body;
 
-      // Validate required fields
-      if (
-        !name ||
-        name.trim() === "" ||
-        !assignedTo ||
-        assignedTo.trim() === ""
-      ) {
+      if (!name || name.trim() === "") {
         return res
           .status(400)
-          .json(
-            new ApiResponse(400, {}, "Task name and assignedTo are required")
-          );
+          .json(new ApiResponse(400, {}, "Task name is required"));
       }
 
-      // Check that assigned user belongs to the same company
+      // Optional: Validate endDate is a valid ISO string or timestamp
+      let parsedEndDate: Date | null = null;
+      if (endDate) {
+        const date = new Date(endDate);
+        if (isNaN(date.getTime())) {
+          return res
+            .status(400)
+            .json(new ApiResponse(400, {}, "Invalid due date"));
+        }
+        parsedEndDate = date;
+      }
+
       const [assignedUser] = await db
         .select()
         .from(userTable)
         .where(
           and(
-            eq(userTable.userId, assignedTo),
+            eq(userTable.userId, req.user?.userId),
             eq(userTable.companyId, companyId)
           )
         );
@@ -161,8 +164,9 @@ export const createPersonalTask = asyncHandler(
         id: uuidv4(),
         name,
         description: description || null,
-        assignedTo,
+        assignedTo: req.user?.userId,
         projectId: null, // personal task
+        endDate: parsedEndDate,
       };
 
       const [createdTask] = await db
@@ -173,11 +177,7 @@ export const createPersonalTask = asyncHandler(
       return res
         .status(201)
         .json(
-          new ApiResponse(
-            201,
-            createdTask,
-            "Personal task created successfully"
-          )
+          new ApiResponse(201, createdTask, "Personal task created successfully")
         );
     } catch (error) {
       console.error("Error creating personal task:", error);
@@ -187,6 +187,7 @@ export const createPersonalTask = asyncHandler(
     }
   }
 );
+
 
 
 export const getTasksByProjectId = asyncHandler(

@@ -25,7 +25,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import { CalendarIcon, UserCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -37,6 +36,7 @@ import { ColorRing } from "react-loader-spinner";
 import AddTaskDialog from "./AddTaskDialog";
 import Image from "next/image";
 import { toast } from "sonner";
+import SubtaskDetailsDialog from "./SubtaskDetailsDialog";
 
 interface AssignedTo {
   userId: string;
@@ -45,7 +45,7 @@ interface AssignedTo {
   avatar: string | null;
 }
 
-interface Subtask {
+export interface Subtask {
   id: string;
   name: string;
   description: string | null;
@@ -64,7 +64,10 @@ interface SubtasksTableProps {
 const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loading, setLoading] = useState(false);
-  const [availableAssignees, setAvailableAssignees] = useState<AssignedTo[]>([]);
+  const [availableAssignees, setAvailableAssignees] = useState<AssignedTo[]>(
+    []
+  );
+  const [dialogOpen, setDialogOpen] = useState<string | null>(null);
 
   // Fetch available assignees (users) from the API
   const fetchAssignees = useCallback(async () => {
@@ -85,7 +88,16 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
   }, [fetchAssignees]);
 
   // Function to update task via API
-  const updateTask = async (taskId: string, updateData: { status?: string; endDate?: string | null; assignedTo?: string }) => {
+  const updateTask = async (
+    taskId: string,
+    updateData: {
+      name?: string;
+      description?: string;
+      status?: string;
+      endDate?: string | null;
+      assignedTo?: string;
+    }
+  ) => {
     try {
       const response = await Axios.put(
         `${env.BACKEND_BASE_URL}/api/task/update-task/${taskId}`,
@@ -119,7 +131,9 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
   // Handle assignee change with API update
   const handleAssigneeChange = async (index: number, newAssigneeId: string) => {
     const updatedSubtasks = [...subtasks];
-    const newAssignee = availableAssignees.find((user) => user.userId === newAssigneeId);
+    const newAssignee = availableAssignees.find(
+      (user) => user.userId === newAssigneeId
+    );
     if (newAssignee) {
       updatedSubtasks[index].assignedTo = {
         userId: newAssignee.userId,
@@ -158,7 +172,9 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
         `${env.BACKEND_BASE_URL}/api/task/delete-task/${taskId}`
       );
       if (response.data?.success) {
-        setSubtasks((prevSubtasks) => prevSubtasks.filter((task) => task.id !== taskId));
+        setSubtasks((prevSubtasks) =>
+          prevSubtasks.filter((task) => task.id !== taskId)
+        );
         toast.success(response.data.message);
         fetchProjectTasks(); // Refresh the task list
       } else {
@@ -309,25 +325,43 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
                       </div>
                     </PopoverContent>
                   </Popover>
-                  <span>{subtask.name}</span>
+                 <button
+                    type="button"
+                    onClick={() => setDialogOpen(subtask.id)}
+                    className="text-left hover:underline ml-2"
+                  >
+                    {subtask.name}
+                  </button>
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     ({subtask.status})
                   </span>
+                  {dialogOpen === subtask.id && (
+                    <SubtaskDetailsDialog
+                      open={dialogOpen === subtask.id}
+                      onOpenChange={(open) => setDialogOpen(open ? subtask.id : null)}
+                      subtask={subtask}
+                      updateTask={updateTask}
+                      onTaskUpdated={fetchProjectTasks}
+                    />
+                  )}
                 </TableCell>
                 <TableCell className="py-2">
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className="text-gray-600 flex dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100">
                         <Image
-                          src={subtask.assignedTo.avatar || "/asset/avatar-pic.png"}
+                          src={
+                            subtask.assignedTo.avatar || "/asset/avatar-pic.png"
+                          }
                           alt={`${subtask.assignedTo.firstName} ${subtask.assignedTo.lastName}`}
                           width={24}
                           height={24}
                           className="rounded-full object-cover"
                         />
                         <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                    {subtask.assignedTo.firstName} {subtask.assignedTo.lastName}
-                  </span>
+                          {subtask.assignedTo.firstName}{" "}
+                          {subtask.assignedTo.lastName}
+                        </span>
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
@@ -335,7 +369,9 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
                         {availableAssignees.map((user) => (
                           <button
                             key={user.userId}
-                            onClick={() => handleAssigneeChange(index, user.userId)}
+                            onClick={() =>
+                              handleAssigneeChange(index, user.userId)
+                            }
                             className="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                           >
                             <Image
@@ -345,13 +381,14 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
                               height={24}
                               className="rounded-full object-cover"
                             />
-                            <span>{user.firstName} {user.lastName}</span>
+                            <span>
+                              {user.firstName} {user.lastName}
+                            </span>
                           </button>
                         ))}
                       </div>
                     </PopoverContent>
                   </Popover>
-                  
                 </TableCell>
                 <TableCell className="py-2">
                   <Popover>
@@ -423,12 +460,16 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
             ))}
             <TableRow>
               <TableCell colSpan={5} className="py-2">
-                <AddTaskDialog projectId={projectId} onTaskAdded={fetchProjectTasks} />
+                <AddTaskDialog
+                  projectId={projectId}
+                  onTaskAdded={fetchProjectTasks}
+                />
               </TableCell>
             </TableRow>
           </TableBody>
         </Table>
       </div>
+      
     </div>
   );
 };

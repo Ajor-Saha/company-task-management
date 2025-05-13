@@ -1,5 +1,4 @@
 "use client"
-
 import { LogOut, BadgeCheck, ChevronsUpDown } from "lucide-react"
 
 import {
@@ -22,6 +21,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+
 
 export function NavUser({
   user,

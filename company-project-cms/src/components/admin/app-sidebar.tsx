@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   List,
+  MessageCircleCode,
   Minus,
   Plus,
   PlusCircle,
@@ -59,12 +60,7 @@ const sidebarData = {
           title: "All Project",
           url: "/project/all-project",
           icon: <List size={16} />,
-        },
-        {
-          title: "Manage Project",
-          url: "/project/manage-project",
-          icon: <LayoutGrid size={16} />,
-        },
+        }
       ],
     },
     {
@@ -83,24 +79,7 @@ const sidebarData = {
           icon: <KeyRound size={16} />,
         },
       ],
-    },
-    {
-      title: "Employee",
-      url: "#",
-      icon: <Users size={20} />,
-      items: [
-        {
-          title: "Add Employee",
-          url: "/employee/add-employee",
-          icon: <PlusCircle size={16} />,
-        },
-        {
-          title: "Show Employees",
-          url: "/employee/show-employees",
-          icon: <List size={16} />,
-        },
-      ],
-    },
+    }
   ],
 };
 
@@ -195,6 +174,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Collapsible>
             ))}
           </SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup>
+          <Link
+            href="/ai-support"
+            className="text-sm px-2 py-2 flex items-center gap-2 dark:bg-[#191919] dark:hover:bg-gray-800"
+          >
+            <MessageCircleCode size={18} />
+            <span>AI Assistant</span>
+          </Link>
         </SidebarGroup>
       </SidebarContent>
 

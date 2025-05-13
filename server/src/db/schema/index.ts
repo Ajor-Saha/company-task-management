@@ -3,3 +3,4 @@ export * from "./tbl-company";
 export * from "./tbl-project";
 export * from "./tbl-task";
 export * from "./tbl-project-assignments";
+export * from "./tbl-message";

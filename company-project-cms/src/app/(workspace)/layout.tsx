@@ -10,8 +10,8 @@ import type { Metadata } from "next";
 // import component
 
 export const metadata: Metadata = {
-  title: "Dashboard Module",
-  description: "Dashboard Module",
+  title: "Workspace Module",
+  description: "Workspace Module",
 };
 
 export default function RootLayout({

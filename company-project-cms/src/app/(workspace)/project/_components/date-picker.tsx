@@ -16,9 +16,18 @@ import {
 interface DatePickerDemoProps {
   selectedDate: Date | undefined;
   setSelectedDate: (date: Date | undefined) => void;
+  onChange?: (date: Date) => void;
+  isLoading?: boolean;
 }
 
-export function DatePickerComp({ selectedDate, setSelectedDate }: DatePickerDemoProps) {
+export function DatePickerComp({ selectedDate, setSelectedDate, onChange, isLoading }: DatePickerDemoProps) {
+  const handleSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date && onChange) {
+      onChange(date);
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -28,6 +37,7 @@ export function DatePickerComp({ selectedDate, setSelectedDate }: DatePickerDemo
             "w-full justify-start text-left font-normal border-muted/30",
             !selectedDate && "text-muted-foreground"
           )}
+          disabled={isLoading}
         >
           <CalendarIcon className="mr-2 h-4 w-4 text-primary/70" />
           {selectedDate instanceof Date && !isNaN(selectedDate.getTime()) ? 
@@ -39,8 +49,9 @@ export function DatePickerComp({ selectedDate, setSelectedDate }: DatePickerDemo
         <Calendar
           mode="single"
           selected={selectedDate}
-          onSelect={setSelectedDate}
+          onSelect={handleSelect}
           initialFocus
+          disabled={isLoading}
         />
       </PopoverContent>
     </Popover>

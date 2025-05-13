@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Axios } from "@/config/axios";
@@ -35,83 +28,39 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { AxiosError } from "axios";
+import { taskSchema } from "@/schemas/task-schema";
+import { Textarea } from "@/components/ui/textarea";
 
-interface AddTaskDialogProps {
-  projectId: string;
-  onTaskAdded: () => void;
-}
-
-interface Employee {
-  userId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  isVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-  avatar?: string;
-}
-
-const taskSchema = z.object({
-  name: z.string().min(3, { message: "Task name must be at least 3 characters" }),
-  assignee: z.string().min(1, { message: "Please select an assignee" }),
-  dueDate: z.string().optional(),
-});
-
-const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
-  projectId,
-  onTaskAdded,
-}) => {
+const AddTask = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       name: "",
-      assignee: "",
+      description: "",
       dueDate: "",
     },
   });
 
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const response = await Axios.get(
-        `${env.BACKEND_BASE_URL}/api/employee/get-company-employee`
-      );
-      if (response.data?.success) {
-        setAvailableEmployees(response.data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching employees:", err);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    if (dialogOpen) {
-      fetchEmployees();
-    }
-  }, [dialogOpen, fetchEmployees]);
-
   const onSubmit = async (data: z.infer<typeof taskSchema>) => {
     setIsSubmitting(true);
     try {
-      const endDate = data.dueDate ? new Date(data.dueDate).toISOString() : null;
+      const endDate = data.dueDate
+        ? new Date(data.dueDate).toISOString()
+        : null;
       const response = await Axios.post(
-        `${env.BACKEND_BASE_URL}/api/task/create-new-task`,
+        `${env.BACKEND_BASE_URL}/api/task/create-personal-task`,
         {
           name: data.name,
-          assignedTo: data.assignee,
-          projectId,
+          description: data.description,
           endDate,
           status: "to-do",
         }
       );
       if (response.data?.success) {
         toast.success(response.data.message || "Task added successfully");
-        onTaskAdded();
         form.reset();
         setDialogOpen(false);
       } else {
@@ -122,7 +71,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
       console.error("Add Task Error:", error);
       const axiosError = error as AxiosError<{ message: string }>;
       const errorMessage =
-        axiosError.response?.data.message ?? "Failed to add task. Please try again.";
+        axiosError.response?.data.message ??
+        "Failed to add task. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -132,7 +82,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <button className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 flex items-center">
+        <button className="text-gray-600 dark:text-gray-300 mr-4 hover:text-gray-800 dark:hover:text-gray-100">
           <svg
             className="w-5 h-5 mr-1"
             fill="none"
@@ -147,10 +97,9 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
               d="M12 4v16m8-8H4"
             ></path>
           </svg>
-          Add Task
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200">
+      <DialogContent className="max-w-[425px] lg:w-[650px] lg:h-[450px] bg-white dark:bg-slate-950 text-gray-800 dark:text-gray-200">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <DialogHeader>
@@ -171,47 +120,32 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                     <Input
                       id="name"
                       {...field}
-                      className="col-span-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                      className="col-span-3  text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
                     />
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
-                name="assignee"
+                name="description"
                 render={({ field }) => (
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="assignee" className="text-right">
-                      Assignee
+                    <FormLabel htmlFor="description" className="text-right">
+                      Description
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select Assignee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableEmployees.map((employee) => (
-                          <SelectItem key={employee.userId} value={employee.userId}>
-                            <div className="flex items-center gap-2">
-                              <Image
-                                src={employee.avatar || "/asset/avatar-pic.png"}
-                                alt={employee.firstName}
-                                width={24}
-                                height={24}
-                                className="rounded-full object-cover"
-                              />
-                              <span>
-                                {employee.firstName} {employee.lastName}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Textarea
+                      id="description"
+                      {...field}
+                      placeholder="Enter task description..."
+                      className="col-span-3  text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 min-h-[100px]"
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="dueDate"
@@ -224,7 +158,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                       type="date"
                       id="dueDate"
                       {...field}
-                      className="col-span-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                      className="col-span-3 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
                     />
                     <FormMessage />
                   </FormItem>
@@ -232,7 +166,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
               />
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -250,4 +184,4 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   );
 };
 
-export default AddTaskDialog;
+export default AddTask;
