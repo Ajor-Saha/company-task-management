@@ -18,49 +18,59 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 287, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 190, fill: "var(--color-other)" },
+const desktopData = [
+  { month: "january", desktop: 186, fill: "var(--color-january)" },
+  { month: "february", desktop: 305, fill: "var(--color-february)" },
+  { month: "march", desktop: 237, fill: "var(--color-march)" },
+  { month: "april", desktop: 173, fill: "var(--color-april)" },
+  { month: "may", desktop: 209, fill: "var(--color-may)" },
+]
+
+const mobileData = [
+  { month: "january", mobile: 80, fill: "var(--color-january)" },
+  { month: "february", mobile: 200, fill: "var(--color-february)" },
+  { month: "march", mobile: 120, fill: "var(--color-march)" },
+  { month: "april", mobile: 190, fill: "var(--color-april)" },
+  { month: "may", mobile: 130, fill: "var(--color-may)" },
 ]
 
 const chartConfig = {
   visitors: {
     label: "Visitors",
   },
-  chrome: {
-    label: "Chrome",
+  desktop: {
+    label: "Desktop",
+  },
+  mobile: {
+    label: "Mobile",
+  },
+  january: {
+    label: "January",
     color: "hsl(var(--chart-1))",
   },
-  safari: {
-    label: "Safari",
+  february: {
+    label: "February",
     color: "hsl(var(--chart-2))",
   },
-  firefox: {
-    label: "Firefox",
+  march: {
+    label: "March",
     color: "hsl(var(--chart-3))",
   },
-  edge: {
-    label: "Edge",
+  april: {
+    label: "April",
     color: "hsl(var(--chart-4))",
   },
-  other: {
-    label: "Other",
+  may: {
+    label: "May",
     color: "hsl(var(--chart-5))",
   },
 } satisfies ChartConfig
 
 export function HomePieChart() {
-  const totalVisitors = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.visitors, 0)
-  }, [])
-
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart - Donut with Text</CardTitle>
+        <CardTitle>Pie Chart - Stacked</CardTitle>
         <CardDescription>January - June 2024</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
@@ -70,46 +80,27 @@ export function HomePieChart() {
         >
           <PieChart>
             <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                className="dark:bg-gray-900 bg-gray-200"
+                  labelKey="visitors"
+                  nameKey="month"
+                  indicator="line"
+                  labelFormatter={(_, payload) => {
+                    return chartConfig[
+                      payload?.[0].dataKey as keyof typeof chartConfig
+                    ].label
+                  }}
+                />
+              }
             />
+            <Pie data={desktopData} dataKey="desktop" outerRadius={60} />
             <Pie
-              data={chartData}
-              dataKey="visitors"
-              nameKey="browser"
-              innerRadius={60}
-              strokeWidth={5}
-            >
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-3xl font-bold"
-                        >
-                          {totalVisitors.toLocaleString()}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
-                        >
-                          Visitors
-                        </tspan>
-                      </text>
-                    )
-                  }
-                }}
-              />
-            </Pie>
+              data={mobileData}
+              dataKey="mobile"
+              innerRadius={70}
+              outerRadius={90}
+            />
           </PieChart>
         </ChartContainer>
       </CardContent>

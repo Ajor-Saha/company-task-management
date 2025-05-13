@@ -1,16 +1,10 @@
-import { HomePieChart } from "@/components/charts/home-piechart";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 import RecentTask from "./_components/recent-task";
 import AssignedMeTask from "./_components/assigned-me";
 import MyTask from "./_components/my-task";
+import { HomePieChart } from "@/components/charts/home-piechart";
+import { HomeAreaChart } from "@/components/charts/area-chat";
+import { AppBarChart } from "@/components/charts/bar-chart";
 
 export default function Home() {
   return (
@@ -24,8 +18,11 @@ export default function Home() {
 
         {/* My Work Card */}
         <MyTask />
-        {/* Home Pie Chart */}
+
+        {/* Pie Chart */}
         <HomePieChart />
+        {/*Bar Chart */}
+        <AppBarChart />
       </div>
     </div>
   );

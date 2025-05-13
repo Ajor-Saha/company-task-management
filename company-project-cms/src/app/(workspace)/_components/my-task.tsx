@@ -21,9 +21,9 @@ import { myWorks } from "@/constants";
 
 const MyTask = () => {
   const [openSections, setOpenSections] = useState({
-    today: true,
-    overdue: true,
-    upcoming: true,
+    today: false,
+    overdue: false,
+    upcoming: false,
   });
 
   const toggleSection = (section: "today" | "overdue" | "upcoming") => {

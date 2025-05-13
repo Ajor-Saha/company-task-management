@@ -3,7 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { v4 as uuidv4 } from "uuid";
 import { ApiResponse } from "../utils/api-response";
 import { db } from "../db";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, desc } from "drizzle-orm";
 import { taskTable, projectTable, userTable } from "../db/schema";
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
@@ -405,6 +405,48 @@ export const getPersonalTasks = asyncHandler(async (req: Request, res: Response)
       .json(new ApiResponse(200, personalTasks, "Personal tasks fetched successfully"));
   } catch (error) {
     console.error("Error fetching personal tasks:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+});
+
+
+
+
+export const getRecentTasks = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
+    }
+
+    // Join with project table and alias project name
+    const recentTasks = await db
+      .select({
+        id: taskTable.id,
+        name: taskTable.name,
+        status: taskTable.status,
+        description: taskTable.description,
+        endDate: taskTable.endDate,
+        createdAt: taskTable.createdAt,
+        projectId: taskTable.projectId,
+        projectName: projectTable.name, // No need for `.nullable()`
+      })
+      .from(taskTable)
+      .leftJoin(projectTable, eq(taskTable.projectId, projectTable.id))
+      .where(eq(taskTable.assignedTo, userId))
+      .orderBy(desc(taskTable.createdAt))
+      .limit(6);
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, recentTasks, "Recent tasks fetched successfully"));
+  } catch (error) {
+    console.error("Error fetching recent tasks:", error);
     return res
       .status(500)
       .json(new ApiResponse(500, {}, "Internal Server Error"));

@@ -21,9 +21,9 @@ import { assignedToMe } from "@/constants";
 
 const AssignedMeTask = () => {
   const [openSections, setOpenSections] = useState({
-    review: true,
-    progress: true,
-    hold: true,
+    review: false,
+    progress: false,
+    hold: false,
   });
 
   const toggleSection = (section: "review" | "progress" | "hold") => {
