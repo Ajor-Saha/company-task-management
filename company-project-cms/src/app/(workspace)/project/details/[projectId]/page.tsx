@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
@@ -23,13 +23,24 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Loader2, Users, Workflow } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  DollarSign,
+  Loader2,
+  Workflow,
+} from "lucide-react";
 import Link from "next/link";
 import { Triangle } from "react-loader-spinner";
 import { DatePickerComp } from "../../_components/date-picker";
 import ChatWidget from "../../_components/ChatWidget";
-import { tasks } from "@/constants";
 import SubtasksTable from "../../_components/TaskList";
+import RichTextEditor from "@/components/editor/RichTextEditor";
+
+// Define the type for the RichTextEditor ref
+type RichTextEditorHandle = {
+  getContent: () => string;
+};
 
 interface ProjectDetails {
   id: string;
@@ -38,8 +49,8 @@ interface ProjectDetails {
   budget: number;
   status: "to-do" | "in-progress" | "review" | "completed" | "hold";
   companyId: string;
-  startDate: string; // formerly createdAt
-  endDate: string;   // formerly updatedAt
+  startDate: string;
+  endDate: string;
 }
 
 const statusOptions = [
@@ -47,7 +58,7 @@ const statusOptions = [
   { value: "in-progress", label: "In Progress" },
   { value: "review", label: "In Review" },
   { value: "completed", label: "Completed" },
-  { value: "hold", label: "On Hold" }
+  { value: "hold", label: "On Hold" },
 ];
 
 function formatDate(dateString: string) {
@@ -65,19 +76,18 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-
 const ProjectDetails = () => {
   const { projectId } = useParams();
   const [project, setProject] = useState<ProjectDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-
-  // New states for date pickers
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
+  const [isUpdatingDates, setIsUpdatingDates] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
-
+  const editorRef = useRef<RichTextEditorHandle>(null);
 
   const fetchProjectDetails = useCallback(async () => {
     if (!projectId) return;
@@ -93,11 +103,9 @@ const ProjectDetails = () => {
       if (response.data.success) {
         const proj: ProjectDetails = response.data.data;
         setProject(proj);
-
-        // Initialize date picker states
         setStartDate(new Date(proj.startDate));
         setEndDate(new Date(proj.endDate));
-      }else {
+      } else {
         setError(response.data.message || "Failed to fetch project details");
         toast.error(response.data.message || "Failed to fetch project details");
       }
@@ -109,8 +117,6 @@ const ProjectDetails = () => {
       setIsLoading(false);
     }
   }, [projectId]);
-
-
 
   useEffect(() => {
     fetchProjectDetails();
@@ -127,17 +133,99 @@ const ProjectDetails = () => {
       );
 
       if (response.data.success) {
-        setProject({ ...project, status: newStatus as ProjectDetails['status'] });
-        toast.success('Project status updated successfully');
+        setProject({
+          ...project,
+          status: newStatus as ProjectDetails["status"],
+        });
+        toast.success("Project status updated successfully");
       } else {
-        toast.error(response.data.message || 'Failed to update project status');
+        toast.error(response.data.message || "Failed to update project status");
       }
     } catch (err) {
-      console.error('Error updating project status:', err);
-      toast.error('An error occurred while updating project status');
+      console.error("Error updating project status:", err);
+      toast.error("An error occurred while updating project status");
     } finally {
       setIsUpdatingStatus(false);
     }
+  };
+
+  const updateProjectDescription = async () => {
+    if (!project) return;
+
+    setIsSavingDescription(true);
+    const rawDescription = editorRef.current?.getContent() || "";
+    const description =
+      rawDescription === "<p><br></p>" || rawDescription.trim() === ""
+        ? ""
+        : rawDescription;
+
+    try {
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/project/update-project-description/${project.id}`,
+        { description }
+      );
+
+      if (response.data.success) {
+        setProject({ ...project, description });
+        toast.success("Project description updated successfully");
+      } else {
+        toast.error(
+          response.data.message || "Failed to update project description"
+        );
+      }
+    } catch (err) {
+      console.error("Error updating project description:", err);
+      toast.error("An error occurred while updating project description");
+    } finally {
+      setIsSavingDescription(false);
+    }
+  };
+
+  const updateProjectDates = async (newStartDate?: Date, newEndDate?: Date) => {
+    if (!project || isUpdatingDates) return;
+
+    setIsUpdatingDates(true);
+    try {
+      const payload: { startDate?: string; endDate?: string } = {};
+      if (newStartDate) {
+        payload.startDate = newStartDate.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+      }
+      if (newEndDate) {
+        payload.endDate = newEndDate.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+      }
+
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/project/update-project/${project.id}`,
+        payload
+      );
+
+      if (response.data.success) {
+        const updatedProject = {
+          ...project,
+          ...(newStartDate && { startDate: payload.startDate! }),
+          ...(newEndDate && { endDate: payload.endDate! }),
+        };
+        setProject(updatedProject);
+        if (newStartDate) setStartDate(newStartDate);
+        if (newEndDate) setEndDate(newEndDate);
+        toast.success("Project dates updated successfully");
+      } else {
+        toast.error(response.data.message || "Failed to update project dates");
+      }
+    } catch (err) {
+      console.error("Error updating project dates:", err);
+      toast.error("An error occurred while updating project dates");
+    } finally {
+      setIsUpdatingDates(false);
+    }
+  };
+
+  const updateStartDate = (newDate: Date) => {
+    updateProjectDates(newDate, undefined);
+  };
+
+  const updateEndDate = (newDate: Date) => {
+    updateProjectDates(undefined, newDate);
   };
 
   if (isLoading) {
@@ -200,10 +288,9 @@ const ProjectDetails = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle className="text-2xl">{project.name}</CardTitle>
-              
             </div>
             <Select
-              value={project?.status}
+              value={project.status}
               onValueChange={updateProjectStatus}
               disabled={isUpdatingStatus}
             >
@@ -216,7 +303,8 @@ const ProjectDetails = () => {
                     </div>
                   ) : (
                     <div className="px-2 py-1 rounded-full text-sm">
-                      {statusOptions.find(opt => opt.value === project?.status)?.label || 'Select Status'}
+                      {statusOptions.find((opt) => opt.value === project.status)
+                        ?.label || "Select Status"}
                     </div>
                   )}
                 </SelectValue>
@@ -257,7 +345,12 @@ const ProjectDetails = () => {
                   <Calendar className="h-5 w-5 text-primary mr-3" />
                   <p className="text-sm font-medium text-primary">Start Date</p>
                 </div>
-                <DatePickerComp selectedDate={startDate} setSelectedDate={setStartDate} />
+                <DatePickerComp
+                  selectedDate={startDate}
+                  setSelectedDate={setStartDate}
+                  onChange={updateStartDate}
+                  isLoading={isUpdatingDates}
+                />
               </div>
 
               <div className="p-4 rounded-lg border border-border/50 shadow-sm hover:shadow-md transition-shadow bg-card">
@@ -265,7 +358,12 @@ const ProjectDetails = () => {
                   <Calendar className="h-5 w-5 text-primary mr-3" />
                   <p className="text-sm font-medium text-primary">End Date</p>
                 </div>
-                <DatePickerComp selectedDate={endDate} setSelectedDate={setEndDate} />
+                <DatePickerComp
+                  selectedDate={endDate}
+                  setSelectedDate={setEndDate}
+                  onChange={updateEndDate}
+                  isLoading={isUpdatingDates}
+                />
               </div>
             </div>
 
@@ -273,10 +371,29 @@ const ProjectDetails = () => {
 
             <div>
               <h3 className="text-lg font-medium mb-3">Description</h3>
-              <div
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: project.description }}
-              />
+              <div className="space-y-4">
+                <RichTextEditor
+                  ref={editorRef}
+                  initialContent={project.description}
+                />
+                <Button
+                  onClick={updateProjectDescription}
+                  variant="outline"
+                  className="mt-4 "
+                  disabled={isSavingDescription}
+                >
+                  {isSavingDescription ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <span className="text-blue-400 dark:text-blue-300">
+                      Save
+                    </span>
+                  )}
+                </Button>
+              </div>
             </div>
 
             <Separator />
@@ -286,12 +403,12 @@ const ProjectDetails = () => {
                 <Workflow className="h-5 w-5 mr-2" />
                 Assigned Tasks
               </h3>
-              < SubtasksTable projectId={project.id} />
+              <SubtasksTable projectId={project.id} />
             </div>
           </div>
         </CardContent>
       </Card>
-      <ChatWidget />
+      <ChatWidget projectId={project.id} />
     </div>
   );
 };

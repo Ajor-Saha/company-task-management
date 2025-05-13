@@ -80,6 +80,10 @@ export default function AddProject() {
     }
   };
 
+  
+
+  
+
   return (
     <div className="w-full mx-auto p-16 bg-background text-foreground">
       <h2 className="text-xl font-semibold mb-6">Add New Project</h2>

@@ -7,6 +7,9 @@ import { Separator } from "../ui/separator";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "../ui/breadcrumb";
 import React from "react";
 import ThemeToggle from "../header/ThemeToggle";
+import { Button } from "../ui/button";
+import { Plus } from "lucide-react";
+import AddTask from "./add-task";
 
 // Breadcrumb Mapping Based on Sidebar Data
 const breadcrumbMap: Record<string, string> = {
@@ -44,6 +47,8 @@ export function BreadcrumbComponent() {
         </BreadcrumbList>
       </Breadcrumb>
       <span className="ml-auto">
+       {/*Add Task icon here*/}
+       <AddTask />
       <ThemeToggle />
       </span>
      
