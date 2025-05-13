@@ -66,7 +66,7 @@ const SubtaskDetailsDialog: React.FC<SubtaskDetailsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md lg:max-w-xl bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200">
+      <DialogContent className="sm:max-w-md lg:max-w-xl bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200">
         <DialogHeader>
           <DialogTitle>
             <Input
