@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, ClipboardCheck, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,23 +17,104 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { assignedToMe } from "@/constants";
+import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const AssignedMeTask = () => {
-  const [openSections, setOpenSections] = useState({
+type Task = {
+  id: string;
+  name: string;
+  status: "to-do" | "in-progress" | "review" | "hold" | "completed";
+  endDate?: string | null;
+  projectId?: string | null;
+  projectName?: string | null;
+};
+
+interface AssignedMeTaskProps {
+  tasks: Task[];
+  loading: boolean;
+}
+
+export default function AssignedMeTask({
+  tasks,
+  loading,
+}: AssignedMeTaskProps) {
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    "to-do": false,
+    "in-progress": false,
     review: false,
-    progress: false,
     hold: false,
+    completed: false,
   });
 
-  const toggleSection = (section: "review" | "progress" | "hold") => {
+  const toggleSection = (status: string) => {
     setOpenSections((prev) => ({
       ...prev,
-      [section]: !prev[section],
+      [status]: !prev[status],
     }));
   };
 
-  const totalTasks = assignedToMe.review.length + assignedToMe.progress.length + assignedToMe.hold.length;
+  const groupedTasks: Record<string, Task[]> = {
+    "to-do": [],
+    "in-progress": [],
+    review: [],
+    hold: [],
+    completed: [],
+  };
+
+  tasks.forEach((task) => {
+    if (groupedTasks[task.status]) {
+      groupedTasks[task.status].push(task);
+    }
+  });
+
+  const statusLabel: Record<string, string> = {
+    "to-do": "To Do",
+    "in-progress": "In Progress",
+    review: "In Review",
+    hold: "On Hold",
+    completed: "Completed",
+  };
+
+  const badgeVariant: Record<
+    string,
+    "default" | "secondary" | "outline" | "destructive"
+  > = {
+    "to-do": "outline",
+    "in-progress": "secondary",
+    review: "default",
+    hold: "destructive",
+    completed: "default",
+  };
+
+  const totalTasks = tasks.length;
+
+  // Skeleton for a single collapsible section
+  const SkeletonSection = () => (
+    <div className="mb-4 border rounded-md overflow-hidden">
+      <div className="flex items-center justify-between w-full p-3">
+        <div className="flex items-center space-x-2">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-6 w-8 rounded-full" />
+        </div>
+      </div>
+      <div className="space-y-0 p-1">
+        {/* Simulate 2-3 tasks per section */}
+        {Array.from({ length: 2 }).map((_, index) => (
+          <div key={index}>
+            <div className="flex items-center py-3 px-3 rounded-md">
+              <Skeleton className="h-4 w-4 mr-2 rounded-full" />
+              <div className="flex justify-between w-full items-center">
+                <Skeleton className="h-4 w-[60%]" />
+                <Skeleton className="h-6 w-16 ml-4 shrink-0 rounded" />
+              </div>
+            </div>
+            {index < 1 && <Separator className="my-1" />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <Card className="flex flex-col">
@@ -44,121 +125,91 @@ const AssignedMeTask = () => {
         </div>
         <CardDescription>Tasks currently assigned to you</CardDescription>
       </CardHeader>
+
       <CardContent className="flex-grow px-6 pb-4">
-        {/* In Review Section */}
-        {assignedToMe.review.length > 0 && (
-          <Collapsible
-            open={openSections.review}
-            onOpenChange={() => toggleSection("review")}
-            className="mb-4 border rounded-md overflow-hidden transition-all"
-          >
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center space-x-2">
-                {openSections.review ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <h3 className="text-sm font-medium">In Review</h3>
-                <Badge variant="outline">{assignedToMe.review.length}</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">Code Reviews</div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0 p-1">
-                {assignedToMe.review.map((task, index) => (
-                  <div key={task.id}>
-                    <div className="flex items-center py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
-                      <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm group-hover:text-primary transition-colors">{task.title}</p>
-                    </div>
-                    {index < assignedToMe.review.length - 1 && <Separator className="my-1" />}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {/* In Progress Section */}
-        {assignedToMe.progress.length > 0 && (
-          <Collapsible
-            open={openSections.progress}
-            onOpenChange={() => toggleSection("progress")}
-            className="mb-4 border rounded-md overflow-hidden transition-all"
-          >
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center space-x-2">
-                {openSections.progress ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <h3 className="text-sm font-medium">In Progress</h3>
-                <Badge variant="secondary">{assignedToMe.progress.length}</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">Active Work</div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0 p-1">
-                {assignedToMe.progress.map((task, index) => (
-                  <div key={task.id}>
-                    <div className="flex items-center py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
-                      <div className="mr-2 h-2 w-2 rounded-full bg-secondary" />
-                      <p className="text-sm group-hover:text-primary transition-colors">{task.title}</p>
-                    </div>
-                    {index < assignedToMe.progress.length - 1 && <Separator className="my-1" />}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {/* On Hold Section */}
-        {assignedToMe.hold.length > 0 && (
-          <Collapsible
-            open={openSections.hold}
-            onOpenChange={() => toggleSection("hold")}
-            className="border rounded-md overflow-hidden transition-all"
-          >
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center space-x-2">
-                {openSections.hold ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <h3 className="text-sm font-medium">On Hold</h3>
-                <Badge variant="default">{assignedToMe.hold.length}</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">Waiting</div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0 p-1">
-                {assignedToMe.hold.map((task, index) => (
-                  <div key={task.id}>
-                    <div className="flex items-center py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
-                      <div className="mr-2 h-2 w-2 rounded-full bg-primary" />
-                      <p className="text-sm group-hover:text-primary transition-colors">{task.title}</p>
-                    </div>
-                    {index < assignedToMe.hold.length - 1 && <Separator className="my-1" />}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {totalTasks === 0 && (
-          <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
-            <ClipboardCheck className="h-12 w-12 mb-2 opacity-20" />
-            <p>No tasks assigned to you yet</p>
-            <p className="text-xs">Tasks assigned to you will appear here</p>
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <SkeletonSection key={index} />
+            ))}
           </div>
+        ) : (
+          <>
+            {Object.entries(groupedTasks).map(([status, taskList]) => {
+              if (taskList.length === 0) return null;
+              return (
+                <Collapsible
+                  key={status}
+                  open={openSections[status]}
+                  onOpenChange={() => toggleSection(status)}
+                  className="mb-4 border rounded-md overflow-hidden transition-all"
+                >
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center space-x-2">
+                      {openSections[status] ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <h3 className="text-sm font-medium">
+                        {statusLabel[status]}
+                      </h3>
+                      <Badge variant={badgeVariant[status]}>
+                        {taskList.length}
+                      </Badge>
+                    </div>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <div className="space-y-0 p-1">
+                      {taskList.map((task, index) => (
+                        <div key={task.id}>
+                          <div className="flex items-center py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
+                            <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <div className="flex justify-between w-full items-center">
+                              <p className="text-sm group-hover:text-primary transition-colors">
+                                {task.name}
+                              </p>
+                              {task.projectName && (
+                                <Badge
+                                  variant="outline"
+                                  className="ml-4 shrink-0"
+                                >
+                                  <Link
+                                    href={`/project/details/${task.projectId}`}
+                                  >
+                                    {task.projectName}
+                                  </Link>
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          {index < taskList.length - 1 && (
+                            <Separator className="my-1" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
+
+            {totalTasks === 0 && (
+              <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
+                <ClipboardCheck className="h-12 w-12 mb-2 opacity-20" />
+                <p>No tasks assigned to you yet</p>
+                <p className="text-xs">
+                  Tasks assigned to you will appear here
+                </p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
+
       <Separator />
+
       <CardFooter className="pt-4 flex justify-between">
         <div className="text-sm text-muted-foreground">
           Status: {totalTasks > 0 ? "Active" : "No Tasks"}
@@ -169,6 +220,4 @@ const AssignedMeTask = () => {
       </CardFooter>
     </Card>
   );
-};
-
-export default AssignedMeTask;
+}

@@ -1,6 +1,5 @@
-'use client'
-
-import { useState } from "react";
+'use client';
+import { useState, useMemo } from "react";
 import { Calendar, ChevronDown, ChevronRight, Clock, ListTodo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,23 +16,100 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { myWorks } from "@/constants";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const MyTask = () => {
+type Task = {
+  id: string;
+  name: string;
+  status: 'to-do' | 'in-progress' | 'review' | 'hold' | 'completed';
+  endDate?: string | null;
+  projectId?: string | null;
+  projectName?: string | null;
+};
+
+interface MyTaskProps {
+  tasks: Task[];
+  loading: boolean;
+}
+
+const MyTask: React.FC<MyTaskProps> = ({ tasks, loading }) => {
   const [openSections, setOpenSections] = useState({
     today: false,
     overdue: false,
-    upcoming: false,
+    future: false,
   });
 
-  const toggleSection = (section: "today" | "overdue" | "upcoming") => {
+  const toggleSection = (section: "today" | "overdue" | "future") => {
     setOpenSections((prev) => ({
       ...prev,
       [section]: !prev[section],
     }));
   };
 
-  const totalTasks = myWorks.today.length + myWorks.overdue.length + myWorks.next.length;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      if (!task.endDate) return false;
+      const endDate = new Date(task.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      return endDate.getTime() === today.getTime();
+    });
+  }, [tasks]);
+
+  const overdueTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      if (!task.endDate) return false;
+      const endDate = new Date(task.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      return endDate.getTime() < today.getTime();
+    });
+  }, [tasks]);
+
+  const futureTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      if (!task.endDate) return false;
+      const endDate = new Date(task.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      return endDate.getTime() > today.getTime();
+    });
+  }, [tasks]);
+
+  const unscheduledTasks = useMemo(() => {
+    return tasks.filter((task) => !task.endDate);
+  }, [tasks]);
+
+  const totalTasks = todayTasks.length + overdueTasks.length + futureTasks.length;
+
+  // Skeleton for a single collapsible section
+  const SkeletonSection = () => (
+    <div className="mb-4 border rounded-md overflow-hidden">
+      <div className="flex items-center justify-between w-full p-3">
+        <div className="flex items-center space-x-2">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-6 w-8 rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-20" />
+      </div>
+      <div className="space-y-0 p-1">
+        {/* Simulate 2 tasks per section */}
+        {Array.from({ length: 2 }).map((_, index) => (
+          <div key={index}>
+            <div className="flex items-center justify-between py-3 px-3 rounded-md">
+              <div className="flex items-center">
+                <Skeleton className="h-2 w-2 rounded-full mr-2" />
+                <Skeleton className="h-4 w-[60%]" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded" />
+            </div>
+            {index < 1 && <Separator className="my-1" />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <Card className="flex flex-col">
@@ -45,135 +121,152 @@ const MyTask = () => {
         <CardDescription>Tasks scheduled for you</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow px-6 pb-4">
-        {/* Today Section */}
-        {myWorks.today.length > 0 && (
-          <Collapsible
-            open={openSections.today}
-            onOpenChange={() => toggleSection("today")}
-            className="mb-4 border rounded-md overflow-hidden transition-all"
-          >
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center space-x-2">
-                {openSections.today ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <h3 className="text-sm font-medium flex items-center">
-                  <Calendar className="mr-1 h-4 w-4" />
-                  Today
-                </h3>
-                <Badge variant="outline">{myWorks.today.length}</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">Current Tasks</div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0 p-1">
-                {myWorks.today.map((task, index) => (
-                  <div key={task.id}>
-                    <div className="flex items-center justify-between py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
-                      <div className="flex items-center">
-                        <div className="mr-2 h-2 w-2 rounded-full bg-secondary" />
-                        <p className="text-sm group-hover:text-primary transition-colors">{task.title}</p>
-                      </div>
-                      <Badge variant="outline">{task.status}</Badge>
-                    </div>
-                    {index < myWorks.today.length - 1 && <Separator className="my-1" />}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {/* Overdue Section */}
-        {myWorks.overdue.length > 0 && (
-          <Collapsible
-            open={openSections.overdue}
-            onOpenChange={() => toggleSection("overdue")}
-            className="mb-4 border border-destructive/20 rounded-md overflow-hidden transition-all"
-          >
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-destructive/5 transition-colors">
-              <div className="flex items-center space-x-2">
-                {openSections.overdue ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <h3 className="text-sm font-medium text-destructive flex items-center">
-                  <Clock className="mr-1 h-4 w-4" />
-                  Overdue
-                </h3>
-                <Badge variant="destructive">{myWorks.overdue.length}</Badge>
-              </div>
-              <div className="text-xs text-destructive/70">Requires Attention</div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0 p-1">
-                {myWorks.overdue.map((task, index) => (
-                  <div key={task.id}>
-                    <div className="flex items-center justify-between py-3 group hover:bg-destructive/5 px-3 rounded-md transition-colors">
-                      <div className="flex items-center">
-                        <div className="mr-2 h-2 w-2 rounded-full bg-destructive" />
-                        <p className="text-sm text-destructive group-hover:text-destructive/80 transition-colors">{task.title}</p>
-                      </div>
-                      <Badge variant="destructive">{task.status}</Badge>
-                    </div>
-                    {index < myWorks.overdue.length - 1 && <Separator className="my-1" />}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {/* Upcoming Section */}
-        {myWorks.next.length > 0 && (
-          <Collapsible
-            open={openSections.upcoming}
-            onOpenChange={() => toggleSection("upcoming")}
-            className="border rounded-md overflow-hidden transition-all"
-          >
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center space-x-2">
-                {openSections.upcoming ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <h3 className="text-sm font-medium flex items-center">
-                  <Calendar className="mr-1 h-4 w-4" />
-                  Upcoming
-                </h3>
-                <Badge variant="secondary">{myWorks.next.length}</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">Future Work</div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0 p-1">
-                {myWorks.next.map((task, index) => (
-                  <div key={task.id}>
-                    <div className="flex items-center justify-between py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
-                      <div className="flex items-center">
-                        <div className="mr-2 h-2 w-2 rounded-full bg-primary" />
-                        <p className="text-sm group-hover:text-primary transition-colors">{task.title}</p>
-                      </div>
-                      <Badge variant="secondary">{task.status}</Badge>
-                    </div>
-                    {index < myWorks.next.length - 1 && <Separator className="my-1" />}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {totalTasks === 0 && (
-          <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
-            <ListTodo className="h-12 w-12 mb-2 opacity-20" />
-            <p>No tasks scheduled for you</p>
-            <p className="text-xs">Your tasks will appear here when scheduled</p>
+        {loading ? (
+          // Show 3 skeleton sections to mimic loading state
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <SkeletonSection key={index} />
+            ))}
           </div>
+        ) : (
+          <>
+            {/* Today Section */}
+            {todayTasks.length > 0 && (
+              <Collapsible
+                open={openSections.today}
+                onOpenChange={() => toggleSection("today")}
+                className="mb-4 border rounded-md overflow-hidden transition-all"
+              >
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-2">
+                    {openSections.today ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <h3 className="text-sm font-medium flex items-center">
+                      <Calendar className="mr-1 h-4 w-4" />
+                      Today
+                    </h3>
+                    <Badge variant="outline">{todayTasks.length}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">Current Tasks</div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-0 p-1">
+                    {todayTasks.map((task, index) => (
+                      <div key={task.id}>
+                        <div className="flex items-center justify-between py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
+                          <div className="flex items-center">
+                            <div className="mr-2 h-2 w-2 rounded-full bg-secondary" />
+                            <p className="text-sm group-hover:text-primary transition-colors">{task.name}</p>
+                          </div>
+                          {task.projectName && (
+                            <Badge variant="outline">{task.projectName}</Badge>
+                          )}
+                        </div>
+                        {index < todayTasks.length - 1 && <Separator className="my-1" />}
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {/* Overdue Section */}
+            {overdueTasks.length > 0 && (
+              <Collapsible
+                open={openSections.overdue}
+                onOpenChange={() => toggleSection("overdue")}
+                className="mb-4 border border-destructive/20 rounded-md overflow-hidden transition-all"
+              >
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-destructive/5 transition-colors">
+                  <div className="flex items-center space-x-2">
+                    {openSections.overdue ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <h3 className="text-sm font-medium text-destructive flex items-center">
+                      <Clock className="mr-1 h-4 w-4" />
+                      Overdue
+                    </h3>
+                    <Badge variant="destructive">{overdueTasks.length}</Badge>
+                  </div>
+                  <div className="text-xs text-destructive/70">Requires Attention</div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-0 p-1">
+                    {overdueTasks.map((task, index) => (
+                      <div key={task.id}>
+                        <div className="flex items-center justify-between py-3 group hover:bg-destructive/5 px-3 rounded-md transition-colors">
+                          <div className="flex items-center">
+                            <div className="mr-2 h-2 w-2 rounded-full bg-destructive" />
+                            <p className="text-sm text-destructive group-hover:text-destructive/80 transition-colors">{task.name}</p>
+                          </div>
+                          {task.projectName && (
+                            <Badge variant="outline">{task.projectName}</Badge>
+                          )}
+                        </div>
+                        {index < overdueTasks.length - 1 && <Separator className="my-1" />}
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {/* Future Section */}
+            {futureTasks.length > 0 && (
+              <Collapsible
+                open={openSections.future}
+                onOpenChange={() => toggleSection("future")}
+                className="border rounded-md overflow-hidden transition-all"
+              >
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-2">
+                    {openSections.future ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <h3 className="text-sm font-medium flex items-center">
+                      <Calendar className="mr-1 h-4 w-4" />
+                      Upcoming
+                    </h3>
+                    <Badge variant="secondary">{futureTasks.length}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">Future Work</div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-0 p-1">
+                    {futureTasks.map((task, index) => (
+                      <div key={task.id}>
+                        <div className="flex items-center justify-between py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
+                          <div className="flex items-center">
+                            <div className="mr-2 h-2 w-2 rounded-full bg-primary" />
+                            <p className="text-sm group-hover:text-primary transition-colors">{task.name}</p>
+                          </div>
+                          {task.projectName && (
+                            <Badge variant="secondary">{task.projectName}</Badge>
+                          )}
+                        </div>
+                        {index < futureTasks.length - 1 && <Separator className="my-1" />}
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {totalTasks === 0 && !loading && (
+              <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
+                <ListTodo className="h-12 w-12 mb-2 opacity-20" />
+                <p>No tasks scheduled for you</p>
+                <p className="text-xs">Your tasks will appear here when scheduled</p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
       <Separator />
@@ -183,7 +276,7 @@ const MyTask = () => {
         </div>
         <div className="flex items-center">
           <Badge variant="outline" className="font-normal">
-            {myWorks.unschedule.length} unscheduled
+            {unscheduledTasks.length} unscheduled
           </Badge>
         </div>
       </CardFooter>

@@ -109,7 +109,7 @@ export default function Chat() {
                   </div>
                   {isUser && (
                     <Image
-                      src={user?.avatar || "/avatar-pic.png"} // Replace with actual path or fallback
+                      src={user?.avatar || "/asset/avatar-pic.png"} // Replace with actual path or fallback
                       alt="User"
                       width={32}
                       height={32}
