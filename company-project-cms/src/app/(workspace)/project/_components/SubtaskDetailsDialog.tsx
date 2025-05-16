@@ -101,7 +101,7 @@ const SubtaskDetailsDialog: React.FC<SubtaskDetailsDialogProps> = ({
               ? format(new Date(subtask.endDate), "PPP")
               : "Not set"}
           </div>
-          <div className="space-y-2">
+          <div className="">
             <strong>Description:</strong>
             <RichTextEditor
               ref={editorRef}

@@ -1,8 +1,5 @@
-'use client';
-
-import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Clipboard } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { CalendarClock, Clipboard } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -10,51 +7,26 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Axios } from '@/config/axios';
-import { env } from '@/config/env';
-import axios from 'axios';
-import Link from 'next/link';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Task = {
   id: string;
   name: string;
   status: string;
+  endDate?: string | null;
   projectId?: string | null;
   projectName?: string | null;
 };
 
-export default function RecentTask() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
+interface RecentTaskProps {
+  tasks: Task[];
+  loading: boolean;
+}
 
-  const fetchRecentTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await Axios.get(
-        `${env.BACKEND_BASE_URL}/api/task/get-recent-tasks`
-      );
-      if (response.data?.success) {
-        setTasks(response.data.data);
-      } else {
-        console.error('API Error:', response.data.message);
-      }
-    } catch (error) {
-      console.error('FetchRecentTasks Error:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', error.response?.data);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRecentTasks();
-  }, [fetchRecentTasks]);
-
+export default function RecentTask({ tasks, loading }: RecentTaskProps) {
   // Render one skeleton row
   function SkeletonRow() {
     return (
@@ -81,57 +53,53 @@ export default function RecentTask() {
 
       <CardContent className="flex-grow px-6 pb-4">
         <div className="space-y-1">
-          {loading
-            ? // show 5 skeleton rows
-              Array.from({ length: 5 }).map((_, i) => (
-                <SkeletonRow key={i} />
-              ))
-            : tasks.length === 0
-            ? (
-              <p className="text-sm text-muted-foreground">
-                No recent tasks found.
-              </p>
-            )
-            : tasks.map((task, idx) => (
-                <div key={task.id}>
-                  <div className="flex items-center py-3 group hover:bg-muted/40 px-2 rounded-md transition-colors">
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        <p className="text-sm font-medium group-hover:text-primary truncate transition-colors">
-                          {task.name}
-                        </p>
-                      </div>
+          {loading ? (
+            // Show 5 skeleton rows
+            Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+          ) : tasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No recent tasks found.</p>
+          ) : (
+            tasks.map((task, idx) => (
+              <div key={task.id}>
+                <div className="flex items-center py-3 group hover:bg-muted/40 px-2 rounded-md transition-colors">
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      <p className="text-sm font-medium group-hover:text-primary truncate transition-colors">
+                        {task.name}
+                      </p>
                     </div>
-                    <Badge
-                      variant={
-                        task.projectId
-                          ? 'default'
-                          : task.status === 'to-do'
-                          ? 'outline'
-                          : task.status === 'in-progress'
-                          ? 'secondary'
-                          : task.status === 'hold'
-                          ? 'destructive'
-                          : 'default'
-                      }
-                      className="ml-auto whitespace-nowrap capitalize"
-                    >
-                      {task.projectId ? (
-                        <Link
-                          href={`/project/details/${task.projectId}`}
-                          className="block"
-                        >
-                          {task.projectName}
-                        </Link>
-                      ) : (
-                        task.status
-                      )}
-                    </Badge>
                   </div>
-                  {idx < tasks.length - 1 && <Separator className="my-1" />}
+                  <Badge
+                    variant={
+                      task.projectId
+                        ? "default"
+                        : task.status === "to-do"
+                        ? "outline"
+                        : task.status === "in-progress"
+                        ? "secondary"
+                        : task.status === "hold"
+                        ? "destructive"
+                        : "default"
+                    }
+                    className="ml-auto whitespace-nowrap capitalize"
+                  >
+                    {task.projectId ? (
+                      <Link
+                        href={`/project/details/${task.projectId}`}
+                        className="block"
+                      >
+                        {task.projectName}
+                      </Link>
+                    ) : (
+                      task.status
+                    )}
+                  </Badge>
                 </div>
-              ))}
+                {idx < tasks.length - 1 && <Separator className="my-1" />}
+              </div>
+            ))
+          )}
         </div>
       </CardContent>
 

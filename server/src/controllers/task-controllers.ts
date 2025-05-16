@@ -177,7 +177,11 @@ export const createPersonalTask = asyncHandler(
       return res
         .status(201)
         .json(
-          new ApiResponse(201, createdTask, "Personal task created successfully")
+          new ApiResponse(
+            201,
+            createdTask,
+            "Personal task created successfully"
+          )
         );
     } catch (error) {
       console.error("Error creating personal task:", error);
@@ -187,8 +191,6 @@ export const createPersonalTask = asyncHandler(
     }
   }
 );
-
-
 
 export const getTasksByProjectId = asyncHandler(
   async (req: Request, res: Response) => {
@@ -270,7 +272,6 @@ export const getTasksByProjectId = asyncHandler(
   }
 );
 
-
 export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   try {
     const companyId = req.user?.companyId;
@@ -344,7 +345,6 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-
 export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   try {
     const companyId = req.user?.companyId;
@@ -378,77 +378,128 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
+export const getPersonalTasks = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.userId;
 
-export const getPersonalTasks = asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.userId;
+      if (!userId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
+      }
 
-    if (!userId) {
+      // Fetch tasks where assignedTo is the current user and projectId is null
+      const personalTasks = await db
+        .select()
+        .from(taskTable)
+        .where(
+          and(eq(taskTable.assignedTo, userId), isNull(taskTable.projectId))
+        );
+
       return res
-        .status(401)
-        .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
-    }
-
-    // Fetch tasks where assignedTo is the current user and projectId is null
-    const personalTasks = await db
-      .select()
-      .from(taskTable)
-      .where(
-        and(
-          eq(taskTable.assignedTo, userId),
-          isNull(taskTable.projectId)
-        )
-      );
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, personalTasks, "Personal tasks fetched successfully"));
-  } catch (error) {
-    console.error("Error fetching personal tasks:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, "Internal Server Error"));
-  }
-});
-
-
-
-
-export const getRecentTasks = asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.userId;
-
-    if (!userId) {
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            personalTasks,
+            "Personal tasks fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Error fetching personal tasks:", error);
       return res
-        .status(401)
-        .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
     }
-
-    // Join with project table and alias project name
-    const recentTasks = await db
-      .select({
-        id: taskTable.id,
-        name: taskTable.name,
-        status: taskTable.status,
-        description: taskTable.description,
-        endDate: taskTable.endDate,
-        createdAt: taskTable.createdAt,
-        projectId: taskTable.projectId,
-        projectName: projectTable.name, // No need for `.nullable()`
-      })
-      .from(taskTable)
-      .leftJoin(projectTable, eq(taskTable.projectId, projectTable.id))
-      .where(eq(taskTable.assignedTo, userId))
-      .orderBy(desc(taskTable.createdAt))
-      .limit(6);
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, recentTasks, "Recent tasks fetched successfully"));
-  } catch (error) {
-    console.error("Error fetching recent tasks:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, "Internal Server Error"));
   }
-});
+);
+
+export const getRecentTasks = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
+      }
+
+      // Join with project table and alias project name
+      const recentTasks = await db
+        .select({
+          id: taskTable.id,
+          name: taskTable.name,
+          status: taskTable.status,
+          description: taskTable.description,
+          endDate: taskTable.endDate,
+          createdAt: taskTable.createdAt,
+          projectId: taskTable.projectId,
+          projectName: projectTable.name, // No need for `.nullable()`
+        })
+        .from(taskTable)
+        .leftJoin(projectTable, eq(taskTable.projectId, projectTable.id))
+        .where(eq(taskTable.assignedTo, userId))
+        .orderBy(desc(taskTable.createdAt))
+        .limit(6);
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, recentTasks, "Recent tasks fetched successfully")
+        );
+    } catch (error) {
+      console.error("Error fetching recent tasks:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+
+export const getAssignedMeTasks = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
+      }
+
+      // Fetch tasks where assignedTo is the current user and projectId is null
+      const assignedMeTasks = await db
+        .select({
+          id: taskTable.id,
+          name: taskTable.name,
+          status: taskTable.status,
+          description: taskTable.description,
+          endDate: taskTable.endDate,
+          createdAt: taskTable.createdAt,
+          projectId: taskTable.projectId,
+          projectName: projectTable.name, // No need for `.nullable()`
+        })
+        .from(taskTable)
+        .leftJoin(projectTable, eq(taskTable.projectId, projectTable.id))
+        .where(eq(taskTable.assignedTo, userId))
+        .orderBy(desc(taskTable.createdAt));
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            assignedMeTasks,
+            "Assigned Me tasks fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Error fetching personal tasks:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
