@@ -155,7 +155,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: url("/company-cms/public/asset/asfalt-light.png");
+    background-image: url("/asset/asfalt-light.png"); 
     background-repeat: repeat;
     background-size: 200px;
   }
