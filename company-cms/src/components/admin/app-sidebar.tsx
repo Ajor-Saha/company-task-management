@@ -104,6 +104,11 @@ const sidebarData = {
           url: "/employee/show-employees",
           icon: <List size={16} />,
         },
+        {
+          title: "Performance",
+          url: "/employee/performance",
+          icon: <LayoutGrid size={16} />,
+        }
       ],
     },
   ],

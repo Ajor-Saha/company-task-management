@@ -7,6 +7,7 @@ import {
   companyTable,
   projectTable,
   projectAssignmentsTable,
+  taskTable,
 } from "../db/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
@@ -565,3 +566,115 @@ export const getAvailableEmployeeToProject = asyncHandler(
     }
   }
 );
+
+
+export const getEmployeeStats = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { employeeId } = req.params;
+      const companyId = req.user.companyId;
+
+      // Check if the employee exists and belongs to the company
+      const employee = await db
+        .select({
+          userId: userTable.userId,
+          firstName: userTable.firstName,
+          lastName: userTable.lastName,
+          role: userTable.role,
+          companyId: userTable.companyId,
+          avatar: userTable.avatar,
+        })
+        .from(userTable)
+        .where(
+          and(
+            eq(userTable.userId, employeeId),
+            eq(userTable.companyId, companyId)
+          )
+        )
+        .limit(1);
+
+      if (!employee.length) {
+        return res
+          .status(404)
+          .json(new ApiResponse(404, {}, "Employee not found"));
+      }
+
+      // Get task statistics - split the queries to get accurate counts
+      const allTasks = await db
+        .select({
+          id: taskTable.id,
+          status: taskTable.status,
+        })
+        .from(taskTable)
+        .where(eq(taskTable.assignedTo, employeeId));
+      
+      // Count tasks by status
+      const taskStats = [{
+        totalTasks: allTasks.length,
+        todo: allTasks.filter(task => task.status === "to-do").length,
+        inProgress: allTasks.filter(task => task.status === "in-progress").length,
+        completed: allTasks.filter(task => task.status === "completed").length,
+        hold: allTasks.filter(task => task.status === "hold").length,
+        review: allTasks.filter(task => task.status === "review").length,
+      }];
+
+      // Get projects where employee is directly assigned
+      const directlyAssignedProjects = await db
+        .select({
+          projectId: projectAssignmentsTable.projectId,
+        })
+        .from(projectAssignmentsTable)
+        .where(eq(projectAssignmentsTable.userId, employeeId));
+
+      // Get projects where employee has tasks assigned
+      const projectsFromTasks = await db
+        .select({
+          projectId: taskTable.projectId,
+        })
+        .from(taskTable)
+        .where(eq(taskTable.assignedTo, employeeId));
+
+      // Combine and get unique project count using Set
+      const allProjectIds = new Set([
+        ...directlyAssignedProjects.map(p => p.projectId),
+        ...projectsFromTasks.map(p => p.projectId)
+      ]);
+
+      // Calculate task completion rate
+      const completionRate = taskStats[0].totalTasks > 0
+        ? Math.round((taskStats[0].completed / taskStats[0].totalTasks) * 100)
+        : 0;
+
+      return res.status(200).json(
+        new ApiResponse(200, {
+          employee: {
+            userId: employee[0].userId,
+            name: `${employee[0].firstName} ${employee[0].lastName}`,
+            role: employee[0].role,
+            avatar: employee[0].avatar,
+          },
+          stats: {
+            tasks: {
+              total: taskStats[0].totalTasks,
+              todo: taskStats[0].todo,
+              inProgress: taskStats[0].inProgress,
+              completed: taskStats[0].completed,
+              hold: taskStats[0].hold,
+              review: taskStats[0].review,
+              completionRate: completionRate,
+            },
+            projects: {
+              total: allProjectIds.size,
+            }
+          }
+        }, "Employee statistics retrieved successfully")
+      );
+    } catch (error) {
+      console.error("Error fetching employee stats:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, null, "Internal server error"));
+    }
+  }
+);
+
