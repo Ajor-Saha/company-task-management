@@ -339,7 +339,14 @@ export default function EmployeeTable() {
                             Copy user ID
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>View details</DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const employeeName = `${employee.firstName.toLowerCase()}-${employee.lastName.toLowerCase()}`;
+                              window.location.href = `/employee/${employeeName}?employeeId=${employee.userId}`;
+                            }}
+                          >
+                            View details
+                          </DropdownMenuItem>
                           <DropdownMenuItem>Edit employee</DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             Delete employee

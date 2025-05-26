@@ -503,3 +503,101 @@ export const getAssignedMeTasks = asyncHandler(
     }
   }
 );
+
+export const getEmployeeTaskStats = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const companyId = req.user?.companyId;
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+      }
+
+      // Get all employees in the company
+      const employees = await db
+        .select({
+          userId: userTable.userId,
+          firstName: userTable.firstName,
+          lastName: userTable.lastName,
+        })
+        .from(userTable)
+        .where(eq(userTable.companyId, companyId));
+
+      // Get current date for overdue calculation
+      const currentDate = new Date();
+
+      // Fetch task statistics for each employee
+      const employeeStats = await Promise.all(
+        employees.map(async (employee) => {
+          // Get all tasks for this employee
+          const tasks = await db
+            .select({
+              status: taskTable.status,
+              endDate: taskTable.endDate,
+            })
+            .from(taskTable)
+            .where(eq(taskTable.assignedTo, employee.userId));
+
+          // Calculate statistics
+          const stats = {
+            employeeName: `${employee.firstName} ${employee.lastName}`,
+            totalTasks: tasks.length,
+            todo: 0,
+            inProgress: 0,
+            completed: 0,
+            overdue: 0,
+          };
+
+          // Calculate counts for each status
+          tasks.forEach((task) => {
+            switch (task.status) {
+              case "to-do":
+                stats.todo++;
+                break;
+              case "in-progress":
+                stats.inProgress++;
+                break;
+              case "completed":
+                stats.completed++;
+                break;
+            }
+
+            // Check for overdue tasks (tasks not completed and past due date)
+            if (
+              task.status !== "completed" &&
+              task.endDate &&
+              new Date(task.endDate) < currentDate
+            ) {
+              stats.overdue++;
+            }
+          });
+
+          return stats;
+        })
+      );
+
+      return res.status(200).json(
+        new ApiResponse(200, {
+          employees: employeeStats,
+          summary: {
+            totalEmployees: employees.length,
+            totalTasks: employeeStats.reduce(
+              (sum, stat) => sum + stat.totalTasks,
+              0
+            ),
+            totalOverdue: employeeStats.reduce(
+              (sum, stat) => sum + stat.overdue,
+              0
+            ),
+          },
+        }, "Employee task statistics fetched successfully")
+      );
+    } catch (error) {
+      console.error("Error fetching employee task statistics:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
