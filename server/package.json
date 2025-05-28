@@ -38,7 +38,7 @@
     "@types/jsonwebtoken": "^9.0.8",
     "@types/morgan": "^1.9.9",
     "@types/nodemailer": "^6.4.17",
-    "drizzle-kit": "^0.30.4",
+    "drizzle-kit": "^0.31.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
