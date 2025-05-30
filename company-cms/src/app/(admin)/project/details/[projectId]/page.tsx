@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
@@ -28,6 +28,7 @@ import { ArrowLeft, Calendar, DollarSign, Loader2, Users } from "lucide-react";
 import Link from "next/link";
 import { Triangle } from "react-loader-spinner";
 import { DatePickerComp } from "../../_components/date-picker";
+import RichTextEditor, { RichTextEditorHandle } from "@/components/editor/RichTextEditor";
 
 interface ProjectDetails {
   id: string;
@@ -86,12 +87,13 @@ const ProjectDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
 
   // New states for date pickers
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
-
+  const editorRef = useRef<RichTextEditorHandle>(null);
 
   const fetchProjectDetails = useCallback(async () => {
     if (!projectId) return;
@@ -127,6 +129,38 @@ const ProjectDetails = () => {
   useEffect(() => {
     fetchProjectDetails();
   }, [fetchProjectDetails]);
+
+  const updateProjectDescription = async () => {
+    if (!project) return;
+
+    setIsSavingDescription(true);
+    const rawDescription = editorRef.current?.getContent() || "";
+    const description =
+      rawDescription === "<p><br></p>" || rawDescription.trim() === ""
+        ? ""
+        : rawDescription;
+
+    try {
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/project/update-project-description/${project.id}`,
+        { description }
+      );
+
+      if (response.data.success) {
+        setProject({ ...project, description });
+        toast.success("Project description updated successfully");
+      } else {
+        toast.error(
+          response.data.message || "Failed to update project description"
+        );
+      }
+    } catch (err) {
+      console.error("Error updating project description:", err);
+      toast.error("An error occurred while updating project description");
+    } finally {
+      setIsSavingDescription(false);
+    }
+  };
 
   const updateProjectStatus = async (newStatus: string) => {
     if (!project || isUpdatingStatus) return;
@@ -283,14 +317,32 @@ const ProjectDetails = () => {
 
             <Separator />
 
-            <div>
+             <div>
               <h3 className="text-lg font-medium mb-3">Description</h3>
-              <div
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: project.description }}
-              />
+              <div className="space-y-4">
+                <RichTextEditor
+                  ref={editorRef}
+                  initialContent={project.description}
+                />
+                <Button
+                  onClick={updateProjectDescription}
+                  variant="outline"
+                  className="mt-4 "
+                  disabled={isSavingDescription}
+                >
+                  {isSavingDescription ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <span className="text-blue-400 dark:text-blue-300">
+                      Save
+                    </span>
+                  )}
+                </Button>
+              </div>
             </div>
-
             <Separator />
 
             <div>

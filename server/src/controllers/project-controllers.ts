@@ -4,8 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import { ApiResponse } from "../utils/api-response";
 import { db } from "../db";
 import { projectTable } from "../db/schema/tbl-project";
-import { and, eq } from "drizzle-orm";
-import { projectAssignmentsTable, userTable } from "../db/schema";
+import { and, eq, count } from "drizzle-orm";
+import { projectAssignmentsTable, userTable, taskTable } from "../db/schema";
 
 export const createProject = asyncHandler(
   async (req: Request, res: Response) => {
@@ -77,7 +77,6 @@ export const createProject = asyncHandler(
   }
 );
 
-
 export const getCompanyProjects = asyncHandler(
   async (req: Request, res: Response) => {
     try {
@@ -123,7 +122,6 @@ export const getCompanyProjects = asyncHandler(
     }
   }
 );
-
 
 export const getProjectDetails = asyncHandler(
   async (req: Request, res: Response) => {
@@ -195,7 +193,6 @@ export const getProjectDetails = asyncHandler(
     }
   }
 );
-
 
 export const updateProject = asyncHandler(
   async (req: Request, res: Response) => {
@@ -278,7 +275,6 @@ export const updateProject = asyncHandler(
   }
 );
 
-
 export const deleteProject = asyncHandler(
   async (req: Request, res: Response) => {
     try {
@@ -330,7 +326,6 @@ export const deleteProject = asyncHandler(
     }
   }
 );
-
 
 export const getProjectAssignments = asyncHandler(
   async (req: Request, res: Response) => {
@@ -688,6 +683,88 @@ export const updateProjectStatus = asyncHandler(
         );
     } catch (error) {
       console.error("Error updating project status:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+
+export const getProjectStats = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const companyId = req.user?.companyId;
+
+      // Validate project ID
+      if (!projectId) {
+        return res
+          .status(400)
+          .json(new ApiResponse(400, {}, "Project ID is required"));
+      }
+
+      // Check if project exists and belongs to the company
+      const project = await db
+        .select()
+        .from(projectTable)
+        .where(
+          and(
+            eq(projectTable.id, projectId),
+            eq(projectTable.companyId, companyId as string)
+          )
+        )
+        .limit(1);
+
+      if (!project.length) {
+        return res
+          .status(404)
+          .json(new ApiResponse(404, {}, "Project not found or unauthorized"));
+      }
+
+      // Get all tasks for the project
+      const tasks = await db
+        .select({
+          id: taskTable.id,
+          status: taskTable.status,
+        })
+        .from(taskTable)
+        .where(eq(taskTable.projectId, projectId));
+
+      // Calculate task statistics
+      const taskStats = [{
+        totalTasks: tasks.length,
+        todo: tasks.filter(task => task.status === "to-do").length,
+        inProgress: tasks.filter(task => task.status === "in-progress").length,
+        completed: tasks.filter(task => task.status === "completed").length,
+        hold: tasks.filter(task => task.status === "hold").length,
+        review: tasks.filter(task => task.status === "review").length,
+      }];
+
+      // Calculate completion rate
+      const completionRate =
+        taskStats[0].totalTasks > 0
+          ? Math.round((taskStats[0].completed / taskStats[0].totalTasks) * 100)
+          : 0;
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            tasks: {
+              total: taskStats[0].totalTasks,
+              todo: taskStats[0].todo,
+              inProgress: taskStats[0].inProgress,
+              completed: taskStats[0].completed,
+              hold: taskStats[0].hold,
+              review: taskStats[0].review,
+              completionRate: completionRate,
+            },
+          },
+          "Project statistics retrieved successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching project statistics:", error);
       return res
         .status(500)
         .json(new ApiResponse(500, {}, "Internal Server Error"));

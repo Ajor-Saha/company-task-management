@@ -23,7 +23,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   path: "/socket.io",
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     credentials: true,
   },
 });
@@ -35,7 +35,7 @@ app.use(cookieParser());
 app.use(logger("dev"));
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     credentials: true,
   })
 );
