@@ -30,9 +30,12 @@ export default function Chat() {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const [pendingPath, setPendingPath] = useState<string | null>(null)
-  const [clearDialogOpen, setClearDialogOpen] = useState(false)
+  const [isBackNavigation, setIsBackNavigation] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+
+  // Add a ref to track if we've added a history entry
+  const historyAddedRef = useRef(false)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -47,6 +50,18 @@ export default function Chat() {
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [messages])
+
+  // Add history entry when component mounts or messages change from empty to non-empty
+  useEffect(() => {
+    if (messages.length > 0 && !historyAddedRef.current) {
+      // Add a history entry to enable back button detection
+      window.history.pushState({ chatPage: true }, "", window.location.href)
+      historyAddedRef.current = true
+      console.log("Added history entry for chat page")
+    } else if (messages.length === 0) {
+      historyAddedRef.current = false
+    }
   }, [messages])
 
   useEffect(() => {
@@ -74,6 +89,23 @@ export default function Chat() {
     return () => document.removeEventListener("click", handleClick)
   }, [messages])
 
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (messages.length > 0) {
+        // Don't push state back immediately - just show dialog
+        setLeaveDialogOpen(true)
+        setPendingPath("__BROWSER_NAVIGATION__")
+        setIsBackNavigation(true)
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState)
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [messages])
+
   const saveConversation = async () => {
     try {
       const conversationData = {
@@ -96,50 +128,62 @@ export default function Chat() {
     }
   }
 
-  const handleSaveAndClear = async () => {
-    await saveConversation()
-    setClearDialogOpen(false)
-    if (pendingPath) router.push(pendingPath)
-    else setMessages([])
-  }
-
-  const handleDontSaveAndClear = () => {
-    setClearDialogOpen(false)
-    if (pendingPath) router.push(pendingPath)
-    else setMessages([])
-  }
-
-  const cancelClear = () => {
-    setClearDialogOpen(false)
-    setPendingPath(null)
-  }
-
-
- const handleSaveAndLeave = async () => {
+  const handleSaveAndLeave = async () => {
     await saveConversation()
     setLeaveDialogOpen(false)
-    if (pendingPath) router.push(pendingPath)
-    else setMessages([])
+
+    if (pendingPath === "__BROWSER_NAVIGATION__") {
+      setIsBackNavigation(false)
+      setMessages([])
+      // Use a timeout to ensure state is cleared before navigation
+      setTimeout(() => {
+        window.history.back()
+      }, 0)
+    } else if (pendingPath) {
+      router.push(pendingPath)
+      setMessages([])
+    }
+
+    setPendingPath(null)
   }
 
   const handleDontSaveAndLeave = () => {
     setLeaveDialogOpen(false)
-    if (pendingPath) router.push(pendingPath)
-    else setMessages([])
+
+    if (pendingPath === "__BROWSER_NAVIGATION__") {
+      setIsBackNavigation(false)
+      setMessages([])
+      // Use a timeout to ensure state is cleared before navigation
+      setTimeout(() => {
+        window.history.back()
+      }, 0)
+    } else if (pendingPath) {
+      router.push(pendingPath)
+      setMessages([])
+    }
+
+    setPendingPath(null)
   }
 
   const cancelLeave = () => {
+    if (pendingPath === "__BROWSER_NAVIGATION__") {
+      // User wants to stay - push the current state back to prevent navigation
+      window.history.pushState(null, "", window.location.href)
+      setIsBackNavigation(false)
+    }
     setLeaveDialogOpen(false)
     setPendingPath(null)
   }
 
-
   const handleCopy = (content: string, messageId: string) => {
-    navigator.clipboard.writeText(content).then(() => {
-      toast.success("Copied to clipboard")
-      setCopiedMessageId(messageId)
-      setTimeout(() => setCopiedMessageId(null), 2000)
-    }).catch(() => toast.error("Failed to copy"))
+    navigator.clipboard
+      .writeText(content)
+      .then(() => {
+        toast.success("Copied to clipboard")
+        setCopiedMessageId(messageId)
+        setTimeout(() => setCopiedMessageId(null), 2000)
+      })
+      .catch(() => toast.error("Failed to copy"))
   }
 
   const handleDelete = (messageId: string) => {
@@ -147,10 +191,16 @@ export default function Chat() {
     setMessages(updated)
     toast.success("Message deleted")
   }
-  const triggerClearDialog = () => {
-    if (messages.length > 0) setClearDialogOpen(true)
-    else toast.info("No conversation to clear")
+
+  const handleDirectClear = () => {
+    if (messages.length > 0) {
+      setMessages([])
+      toast.success("Chat cleared")
+    } else {
+      toast.info("No conversation to clear")
+    }
   }
+
   return (
     <>
       <div className="min-h-screen dark:text-gray-200 flex items-center justify-center p-4">
@@ -160,17 +210,19 @@ export default function Chat() {
             <h1 className="text-xl font-bold">TaskForce AI Support</h1>
             <div className="flex items-center gap-2">
               <Button
-                onClick={triggerClearDialog}
+                onClick={handleDirectClear}
                 variant="outline"
                 size="sm"
-                className="text-gray-200 border-gray-600 hover:bg-gray-700"
+                className="text-gray-200 border-gray-600 "
               >
                 Clear Chat
               </Button>
               {error && (
                 <div className="flex items-center">
                   <p className="text-sm mr-2 text-red-200">An error occurred.</p>
-                  <Button onClick={() => reload()} className="bg-red-500 text-white hover:bg-red-600">Retry</Button>
+                  <Button onClick={() => reload()} className="bg-red-500 text-white hover:bg-red-600">
+                    Retry
+                  </Button>
                 </div>
               )}
             </div>
@@ -242,7 +294,17 @@ export default function Chat() {
                         onClick={() => handleCopy(m.content, m.id)}
                         className="h-8 px-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                       >
-                        {isCopied ? <><Check className="h-4 w-4 mr-1" />Copied</> : <><Copy className="h-4 w-4 mr-1" />Copy</>}
+                        {isCopied ? (
+                          <>
+                            <Check className="h-4 w-4 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </>
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
@@ -262,46 +324,56 @@ export default function Chat() {
           </ScrollArea>
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="flex items-center gap-4 mt-4">
-            <input
-              className="flex-grow rounded-md border border-gray-300 px-3 py-2 dark:bg-gray-800 dark:text-gray-200"
+          <form
+            onSubmit={handleSubmit}
+            className="p-4 border-t rounded-2xl flex items-center relative dark:bg-stone-900"
+          >
+            <textarea
+              rows={2}
               value={input}
               onChange={handleInputChange}
-              placeholder="Ask your question..."
+              disabled={!!error}
+              className="w-full p-2 pr-10 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+              placeholder="Ask me anything..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSubmit(e)
+                }
+              }}
             />
-            <Button type="submit" disabled={!input.trim()} className="px-4 py-2">
-              <SendHorizontal />
-              Send
+            <Button
+              type="submit"
+              className="absolute right-6 top-1/2 transform -translate-y-1/2 p-1 text-blue-500 hover:text-blue-600 bg-transparent hover:bg-transparent"
+              disabled={!!error}
+            >
+              <SendHorizontal className="h-5 w-5" />
             </Button>
           </form>
         </div>
       </div>
 
       {/* Leave Dialog */}
-      <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+      <Dialog
+        open={leaveDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) cancelLeave()
+          else setLeaveDialogOpen(true)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Leave Support Chat?</DialogTitle>
-            <DialogDescription>Do you want to save your conversation before leaving?</DialogDescription>
+            <DialogDescription className="text-black dark:text-gray-300">Do you want to save your conversation before leaving?</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={cancelLeave}>Cancel</Button>
-            <Button variant="outline" onClick={handleDontSaveAndLeave}>Don't Save</Button>
+            <Button variant="outline" onClick={cancelLeave}>
+              Cancel
+            </Button>
+            <Button variant="outline" onClick={handleDontSaveAndLeave}>
+              Don't Save
+            </Button>
             <Button onClick={handleSaveAndLeave}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* Clear Chat Dialog */}
-      <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Clear Chat History?</DialogTitle>
-            <DialogDescription>Are you sure you want to clear the chat history?</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={cancelClear}>Cancel</Button>
-            <Button variant="outline" onClick={handleDontSaveAndClear}>Don't Save</Button>
-            <Button onClick={handleSaveAndClear}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
