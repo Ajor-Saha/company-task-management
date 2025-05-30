@@ -9,7 +9,12 @@ export type RichTextEditorHandle = {
   getContent: () => string;
 };
 
-const RichTextEditor = forwardRef<RichTextEditorHandle>((_, ref) => {
+// Define the props interface for RichTextEditor
+interface RichTextEditorProps {
+  initialContent?: string;
+}
+
+const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({ initialContent }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
 
@@ -29,6 +34,11 @@ const RichTextEditor = forwardRef<RichTextEditorHandle>((_, ref) => {
         },
         placeholder: "Write something...",
       });
+
+      // Set initial content if provided
+      if (initialContent && quillRef.current) {
+        quillRef.current.root.innerHTML = initialContent;
+      }
     }
 
     // Cleanup function to remove Quill DOM elements and reset the ref
@@ -39,6 +49,13 @@ const RichTextEditor = forwardRef<RichTextEditorHandle>((_, ref) => {
       }
     };
   }, []); // Empty dependency array ensures this runs only on mount/unmount
+
+  // Update content when initialContent changes (if the editor is already initialized)
+  useEffect(() => {
+    if (quillRef.current && initialContent) {
+      quillRef.current.root.innerHTML = initialContent;
+    }
+  }, [initialContent]);
 
   // Expose the getContent function to the parent component
   useImperativeHandle(ref, () => ({

@@ -19,6 +19,7 @@ export const projectTable = pgTable("tbl_project", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   budget: integer("budget"),
+  extraCost: integer("extra_cost").default(0),
   status: projectStatusEnum("status").default("to-do"),
   companyId: text("company_id")
     .references(() => companyTable.id, { onDelete: "cascade" })

@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   pgEnum,
+  integer,
 } from "drizzle-orm/pg-core";
 import { companyTable } from "./tbl-company";
 import { projectAssignmentsTable } from "./tbl-project-assignments";
@@ -23,6 +24,7 @@ export const userTable = pgTable("tbl_user", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   avatar: text("avatar"),
+  salary: text("salary"),
   role: roleEnum("role").notNull(),
   verifyCode: text("verify_code"),
   verifyCodeExpiry: timestamp("verify_code_expiry"),
