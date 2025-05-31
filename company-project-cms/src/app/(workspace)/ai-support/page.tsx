@@ -361,21 +361,40 @@ export default function Chat() {
           else setLeaveDialogOpen(true)
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Leave Support Chat?</DialogTitle>
-            <DialogDescription className="text-black dark:text-gray-300">Do you want to save your conversation before leaving?</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={cancelLeave}>
-              Cancel
-            </Button>
-            <Button variant="outline" onClick={handleDontSaveAndLeave}>
-              Don't Save
-            </Button>
-            <Button onClick={handleSaveAndLeave}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
+        <DialogContent className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-6 sm:p-8">
+  <DialogHeader className="space-y-1">
+    <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+      Leave Support Chat?
+    </DialogTitle>
+    <DialogDescription className="text-sm text-gray-600 dark:text-gray-400">
+      Do you want to save your conversation before leaving?
+    </DialogDescription>
+  </DialogHeader>
+
+  <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 pt-6">
+    <Button
+      variant="outline"
+      onClick={cancelLeave}
+      className="border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+    >
+      Cancel
+    </Button>
+    <Button
+      variant="outline"
+      onClick={handleDontSaveAndLeave}
+      className="border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+    >
+      Don’t Save
+    </Button>
+    <Button
+      onClick={handleSaveAndLeave}
+      className="bg-slate-600 hover:bg-slate-700 text-white transition shadow-md"
+    >
+      Save
+    </Button>
+  </DialogFooter>
+</DialogContent>
+
       </Dialog>
     </>
   )
