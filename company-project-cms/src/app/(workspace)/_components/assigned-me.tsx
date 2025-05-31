@@ -19,24 +19,36 @@ import {
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TaskDetailsDialog } from "@/components/task/task-details-dialog";
 
 type Task = {
   id: string;
   name: string;
-  status: "to-do" | "in-progress" | "review" | "hold" | "completed";
+  status: string;
+  description?: string | null;
   endDate?: string | null;
   projectId?: string | null;
   projectName?: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 interface AssignedMeTaskProps {
   tasks: Task[];
   loading: boolean;
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string | null;
 }
 
 export default function AssignedMeTask({
   tasks,
   loading,
+  userId,
+  firstName,
+  lastName,
+  avatar,
 }: AssignedMeTaskProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     "to-do": false,
@@ -45,6 +57,7 @@ export default function AssignedMeTask({
     hold: false,
     completed: false,
   });
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const toggleSection = (status: string) => {
     setOpenSections((prev) => ({
@@ -167,9 +180,12 @@ export default function AssignedMeTask({
                           <div className="flex items-center py-3 group hover:bg-muted/40 px-3 rounded-md transition-colors">
                             <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
                             <div className="flex justify-between w-full items-center">
-                              <p className="text-sm group-hover:text-primary transition-colors">
+                              <button
+                                onClick={() => setSelectedTask(task)}
+                                className="text-sm group-hover:text-primary transition-colors text-left"
+                              >
                                 {task.name}
-                              </p>
+                              </button>
                               {task.projectName && (
                                 <Badge
                                   variant="outline"
@@ -218,6 +234,19 @@ export default function AssignedMeTask({
           {totalTasks} {totalTasks === 1 ? "task" : "tasks"}
         </div>
       </CardFooter>
+
+      {selectedTask && (
+        <TaskDetailsDialog
+          open={!!selectedTask}
+          onOpenChange={(open) => !open && setSelectedTask(null)}
+          task={selectedTask}
+          userId={userId}
+          firstName={firstName}
+          lastName={lastName}
+          avatar={avatar}
+          onTaskUpdate={() => window.dispatchEvent(new CustomEvent('task-updated'))}
+        />
+      )}
     </Card>
   );
 }

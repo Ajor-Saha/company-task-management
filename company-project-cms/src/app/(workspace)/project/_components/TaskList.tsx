@@ -232,6 +232,7 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
     );
   }
 
+  
   return (
     <div className="p-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       <div className="flex justify-between items-center mb-2">

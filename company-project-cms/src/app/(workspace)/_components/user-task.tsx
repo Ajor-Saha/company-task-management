@@ -8,19 +8,14 @@ import { AppBarChart } from "@/components/charts/bar-chart";
 import axios from "axios";
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
+import useAuthStore from "@/store/store";
 
-type Task = {
-  id: string
-  name: string
-  status: 'to-do' | 'in-progress' | 'review' | 'hold' | 'completed'
-  endDate?: string | null;
-  projectId?: string | null;
-  projectName?: string | null;
-}
+import { Task, TaskComponentProps } from "@/types/task";
 
 const UserTask = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuthStore();
 
   const fetchAssignedTasks = useCallback(async () => {
     setLoading(true)
@@ -45,24 +40,57 @@ const UserTask = () => {
 
   useEffect(() => {
     fetchAssignedTasks()
+
+    // Add event listener for task updates
+    const handleTaskUpdate = () => {
+      fetchAssignedTasks()
+    }
+    window.addEventListener('task-updated', handleTaskUpdate)
+
+    return () => {
+      window.removeEventListener('task-updated', handleTaskUpdate)
+    }
   }, [fetchAssignedTasks])
+
+  
 
 
   return (
     <div className="p-6">
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Tasks Card */}
-        <RecentTask tasks={tasks.slice(0, 6)} loading={loading} />
+        <RecentTask 
+          tasks={tasks.slice(0, 6)} 
+          loading={loading}
+          userId={user?.userId}
+          firstName={user?.firstName}
+          lastName={user?.lastName}
+          avatar={user?.avatar}
+        />
         {/* Assigned to Me Card */}
-        <AssignedMeTask tasks={tasks} loading={loading} />
+        <AssignedMeTask 
+          tasks={tasks} 
+          loading={loading}
+          userId={user?.userId}
+          firstName={user?.firstName}
+          lastName={user?.lastName}
+          avatar={user?.avatar}
+        />
 
         {/* My Work Card */}
-        <MyTask tasks={tasks} loading={loading} />
+        <MyTask 
+          tasks={tasks} 
+          loading={loading}
+          userId={user?.userId}
+          firstName={user?.firstName}
+          lastName={user?.lastName}
+          avatar={user?.avatar}
+        />
 
         {/* Pie Chart */}
-        <HomePieChart />
+        <HomePieChart  />
         {/*Bar Chart */}
-        <AppBarChart />
+        <AppBarChart  />
       </div>
     </div>
   );
