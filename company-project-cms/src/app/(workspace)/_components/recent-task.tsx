@@ -8,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { TaskDetailsDialog } from "@/components/task/task-details-dialog";
+import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,17 +18,33 @@ type Task = {
   id: string;
   name: string;
   status: string;
+  description?: string | null;
   endDate?: string | null;
   projectId?: string | null;
   projectName?: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 interface RecentTaskProps {
   tasks: Task[];
   loading: boolean;
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string | null;
 }
 
-export default function RecentTask({ tasks, loading }: RecentTaskProps) {
+export default function RecentTask({ 
+  tasks, 
+  loading,
+  userId,
+  firstName,
+  lastName,
+  avatar 
+}: RecentTaskProps) {
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
   // Render one skeleton row
   function SkeletonRow() {
     return (
@@ -65,9 +83,12 @@ export default function RecentTask({ tasks, loading }: RecentTaskProps) {
                   <div className="flex-1 overflow-hidden">
                     <div className="flex items-center space-x-3">
                       <div className="h-2 w-2 rounded-full bg-primary" />
-                      <p className="text-sm font-medium group-hover:text-primary truncate transition-colors">
+                      <button
+                        onClick={() => setSelectedTask(task)}
+                        className="text-sm font-medium group-hover:text-primary truncate transition-colors text-left"
+                      >
                         {task.name}
-                      </p>
+                      </button>
                     </div>
                   </div>
                   <Badge
@@ -111,6 +132,19 @@ export default function RecentTask({ tasks, loading }: RecentTaskProps) {
         </div>
         <div className="text-sm font-medium">Total: {tasks.length}</div>
       </CardFooter>
+
+      {selectedTask && (
+        <TaskDetailsDialog
+          open={!!selectedTask}
+          onOpenChange={(open) => !open && setSelectedTask(null)}
+          task={selectedTask}
+          userId={userId}
+          firstName={firstName}
+          lastName={lastName}
+          avatar={avatar}
+          onTaskUpdate={() => window.dispatchEvent(new CustomEvent('task-updated'))}
+        />
+      )}
     </Card>
   );
 }

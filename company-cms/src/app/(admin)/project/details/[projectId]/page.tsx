@@ -317,7 +317,7 @@ const EnhancedTaskList = ({ projectId }: { projectId: string }) => {
           aValue = priorityOrder[a.priority]
           bValue = priorityOrder[b.priority]
           break
-        default:
+    default:
           return 0
       }
 
@@ -906,7 +906,7 @@ const ProjectDetails = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="p-4 rounded-lg border border-border/50 shadow-sm hover:shadow-md transition-shadow bg-card">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center">
+              <div className="flex items-center">
                     <DollarSign className="h-5 w-5 text-primary mr-2" />
                     <p className="text-sm font-medium text-primary">Budget</p>
                   </div>
