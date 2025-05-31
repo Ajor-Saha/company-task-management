@@ -12,82 +12,8 @@ import { RevenueChart } from "@/app/(admin)/dashboard/_components/revenue-chart"
 import { UnitSoldChart } from "@/app/(admin)/dashboard/_components/unit-sold-chart"
 import { MetricCard } from "@/app/(admin)/dashboard/_components/metric-card"
 import PStatisticsGraph from "@/app/(admin)/dashboard/_components/PStatisticsGraph"
+import { softwareProducts, dashboardMetrics } from './_components/data';
 
-const softwareProducts = [
-  {
-    id: 1,
-    name: "Adobe Creative Cloud",
-    supplier: "Adobe Inc.",
-    stock: 775,
-    sales: 4858,
-    batchTracked: "343454",
-    icon: "🎨",
-  },
-  {
-    id: 2,
-    name: "Microsoft Office 365",
-    supplier: "Microsoft Corp",
-    stock: 888,
-    sales: 1334,
-    batchTracked: "5098923",
-    icon: "📊",
-  },
-  {
-    id: 3,
-    name: "Zoom Pro",
-    supplier: "Zoom Video Communications",
-    stock: 466,
-    sales: 7127,
-    batchTracked: "3245672",
-    icon: "🎥",
-  },
-  {
-    id: 4,
-    name: "Slack Enterprise",
-    supplier: "Salesforce Inc.",
-    stock: 722,
-    sales: 2126,
-    batchTracked: "3256477",
-    icon: "💬",
-  },
-  {
-    id: 5,
-    name: "Google Workspace",
-    supplier: "Google LLC",
-    stock: 1200,
-    sales: 5400,
-    batchTracked: "987654",
-    icon: "☁️",
-  },
-  {
-    id: 6,
-    name: "Adobe Photoshop",
-    supplier: "Adobe Inc.",
-    stock: 982,
-    sales: 6142,
-    batchTracked: "123987",
-    icon: "🖌️",
-  },
-  {
-    id: 7,
-    name: "Trello Business Class",
-    supplier: "Atlassian Inc.",
-    stock: 540,
-    sales: 3200,
-    batchTracked: "4567890",
-    icon: "📋",
-  },
-  {
-    id: 8,
-    name: "GitHub Enterprise",
-    supplier: "Microsoft Corp.",
-    stock: 670,
-    sales: 4500,
-    batchTracked: "7896543",
-    icon: "🐙",
-  },
-  
-]
 
 export default function DashboardClient() {
   const [timeframe, setTimeframe] = useState("Last year")
@@ -126,45 +52,13 @@ export default function DashboardClient() {
             </div>
           </div>
 
-          {/* Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard
-              title="Gross Sales"
-              value="$22,892"
-              change={26}
-              changeValue="+1.42k"
-              changeLabel="today"
-              trend="up"
-              icon="💰"
-            />
-            <MetricCard
-              title="Average Sales"
-              value="$8,283"
-              change={23}
-              changeValue="+0.34k"
-              changeLabel="today"
-              trend="up"
-              icon="📈"
-            />
-            <MetricCard
-              title="New Sales"
-              value="$1,853"
-              change={-2.4}
-              changeValue="+0.45"
-              changeLabel="today"
-              trend="down"
-              icon="🆕"
-            />
-            <MetricCard
-              title="Gross Profits"
-              value="$5,239"
-              change={14.4}
-              changeValue="+0.5k"
-              changeLabel="today"
-              trend="up"
-              icon="💵"
-            />
-          </div>
+
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {dashboardMetrics.map((metric, index) => (
+        <MetricCard key={index} {...metric} />
+      ))}
+    </div>
+
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
