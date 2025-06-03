@@ -87,6 +87,37 @@ export function TaskDetailsDialog({
   const [isUploading, setIsUploading] = useState(false);
   const [taskFiles, setTaskFiles] = useState<TaskFile[]>(task.taskFiles || []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [taskName, setTaskName] = useState(task.name);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus input when editing starts
+  
+
+  const validateTaskName = (name: string): boolean => {
+    if (name.trim().length < 3) {
+      setNameError("Task name must be at least 3 characters long");
+      return false;
+    }
+    setNameError(null);
+    return true;
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTaskName(e.target.value);
+    if (e.target.value.trim().length >= 3) {
+      setNameError(null);
+    }
+  };
+
+  const handleNameBlur = () => {
+    
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    
+  };
 
   // Update taskFiles when task prop changes
   useEffect(() => {
@@ -94,6 +125,7 @@ export function TaskDetailsDialog({
   }, [task.taskFiles]);
 
   const updateTask = async (updateData: {
+    name?: string;
     description?: string;
     status?: string;
     endDate?: string | null;
@@ -159,10 +191,16 @@ export function TaskDetailsDialog({
   };
 
   const handleSave = async () => {
+    if (!validateTaskName(taskName)) {
+      toast.error("Please fix the task name error before saving");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const description = editorRef.current?.getContent() || undefined;
       const updatedTask = await updateTask({
+        name: taskName.trim(),
         description,
         status,
         endDate: date ? date.toISOString() : null,
@@ -347,7 +385,7 @@ export function TaskDetailsDialog({
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Clipboard className="h-5 w-5" />
-            {task.name}
+            
           </DialogTitle>
           <DialogDescription className="flex items-center justify-between">
             <span>Task Details</span>
