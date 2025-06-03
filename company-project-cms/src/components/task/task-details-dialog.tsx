@@ -93,7 +93,11 @@ export function TaskDetailsDialog({
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Focus input when editing starts
-  
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [isEditingName]);
 
   const validateTaskName = (name: string): boolean => {
     if (name.trim().length < 3) {
@@ -112,11 +116,21 @@ export function TaskDetailsDialog({
   };
 
   const handleNameBlur = () => {
-    
+    if (validateTaskName(taskName)) {
+      setIsEditingName(false);
+    }
   };
 
   const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    
+    if (e.key === 'Enter') {
+      if (validateTaskName(taskName)) {
+        setIsEditingName(false);
+      }
+    } else if (e.key === 'Escape') {
+      setTaskName(task.name);
+      setNameError(null);
+      setIsEditingName(false);
+    }
   };
 
   // Update taskFiles when task prop changes
@@ -385,7 +399,32 @@ export function TaskDetailsDialog({
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Clipboard className="h-5 w-5" />
-            
+            {isEditingName ? (
+              <div className="flex-1">
+                <Input
+                  ref={nameInputRef}
+                  value={taskName}
+                  onChange={handleNameChange}
+                  onBlur={handleNameBlur}
+                  onKeyDown={handleNameKeyDown}
+                  className={cn(
+                    "w-full font-semibold",
+                    nameError && "border-red-500"
+                  )}
+                  placeholder="Enter task name..."
+                />
+                {nameError && (
+                  <p className="text-xs text-red-500 mt-1">{nameError}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsEditingName(true)}
+                className="hover:bg-accent hover:text-accent-foreground px-2 py-1 rounded-md transition-colors"
+              >
+                {taskName}
+              </button>
+            )}
           </DialogTitle>
           <DialogDescription className="flex items-center justify-between">
             <span>Task Details</span>
@@ -622,3 +661,4 @@ export function TaskDetailsDialog({
     </Dialog>
   );
 }
+
