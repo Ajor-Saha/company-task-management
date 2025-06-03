@@ -10,7 +10,7 @@ import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import useAuthStore from "@/store/store";
 
-import { Task, TaskComponentProps } from "@/types/task";
+import { Task } from "@/types/task";
 
 const UserTask = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
