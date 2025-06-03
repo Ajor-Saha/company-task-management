@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,11 +28,13 @@ import {
 } from "@/components/ui/form";
 import { AxiosError } from "axios";
 import { taskSchema } from "@/schemas/task-schema";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor, { RichTextEditorHandle } from "../editor/RichTextEditor";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const AddTask = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const editorRef = useRef<RichTextEditorHandle>(null);
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
@@ -50,11 +51,12 @@ const AddTask = () => {
       const endDate = data.dueDate
         ? new Date(data.dueDate).toISOString()
         : null;
+      const description = editorRef.current?.getContent() || "";
       const response = await Axios.post(
         `${env.BACKEND_BASE_URL}/api/task/create-personal-task`,
         {
           name: data.name,
-          description: data.description,
+          description,
           endDate,
           status: "to-do",
         }
@@ -99,73 +101,76 @@ const AddTask = () => {
           </svg>
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-[425px] lg:w-[650px] lg:h-[450px] bg-white dark:bg-slate-950 text-gray-800 dark:text-gray-200">
+      <DialogContent className="max-w-[425px] lg:max-w-[650px] h-[450px] bg-white dark:bg-slate-950 text-gray-800 dark:text-gray-200">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <DialogHeader>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col">
+            <DialogHeader className="px-6 pt-6 pb-2">
               <DialogTitle>Add New Task</DialogTitle>
               <DialogDescription>
                 Enter the details for the new task. Click save when you're done.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="name" className="text-right">
-                      Name
-                    </FormLabel>
-                    <Input
-                      id="name"
-                      {...field}
-                      className="col-span-3  text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <ScrollArea className="flex-1 px-6">
+              <div className="grid gap-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel htmlFor="name" className="text-right">
+                        Name
+                      </FormLabel>
+                      <Input
+                        id="name"
+                        {...field}
+                        className="col-span-3 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="description" className="text-right">
-                      Description
-                    </FormLabel>
-                    <Textarea
-                      id="description"
-                      {...field}
-                      placeholder="Enter task description..."
-                      className="col-span-3  text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 min-h-[100px]"
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-start gap-4">
+                      <FormLabel htmlFor="description" className="text-right pt-2">
+                        Description
+                      </FormLabel>
+                      <div className="col-span-3">
+                        <RichTextEditor
+                          ref={editorRef}
+                          initialContent={field.value || ""}
+                          key="add-task-editor"
+                        />
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="dueDate" className="text-right">
-                      Due Date
-                    </FormLabel>
-                    <Input
-                      type="date"
-                      id="dueDate"
-                      {...field}
-                      className="col-span-3 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <DialogFooter>
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel htmlFor="dueDate" className="text-right">
+                        Due Date
+                      </FormLabel>
+                      <Input
+                        type="date"
+                        id="dueDate"
+                        {...field}
+                        className="col-span-3 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </ScrollArea>
+            <DialogFooter className="px-6 py-4">
               <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <>
