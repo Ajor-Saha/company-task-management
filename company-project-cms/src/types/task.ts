@@ -6,6 +6,7 @@ export type Task = {
   endDate?: string | null;
   projectId?: string | null;
   projectName?: string | null;
+  taskFiles?: TaskFile[];
   createdAt: string;
   updatedAt: string;
 };
@@ -20,4 +21,9 @@ export interface UserProps {
 export interface TaskComponentProps extends UserProps {
   tasks: Task[];
   loading: boolean;
+}
+
+export interface TaskFile {
+  id: string;
+  url: string;
 }

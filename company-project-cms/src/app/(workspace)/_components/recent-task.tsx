@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TaskFile } from "@/types/task";
 
 type Task = {
   id: string;
@@ -22,6 +23,7 @@ type Task = {
   endDate?: string | null;
   projectId?: string | null;
   projectName?: string | null;
+  taskFiles?: TaskFile[];
   createdAt: string;
   updatedAt: string;
 };

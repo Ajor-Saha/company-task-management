@@ -1,7 +1,13 @@
 import { relations, sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, pgEnum, jsonb } from "drizzle-orm/pg-core";
 import { projectTable } from "./tbl-project";
 import { userTable } from "./tbl-user";
+
+// Define the task file type
+type TaskFile = {
+  id: string;
+  url: string;
+};
 
 // Define the task status enum
 export const taskStatusEnum = pgEnum("task_status", [
@@ -24,6 +30,7 @@ export const taskTable = pgTable("tbl_task", {
     .references(() => userTable.userId, { onDelete: "cascade" })
     .notNull(),
   endDate: timestamp("end_date"),
+  taskFiles: jsonb("task_files").$type<TaskFile[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .default(sql`current_timestamp`)

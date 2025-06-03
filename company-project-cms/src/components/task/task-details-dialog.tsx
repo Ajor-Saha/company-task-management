@@ -21,11 +21,18 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import RichTextEditor, { RichTextEditorHandle } from "../editor/RichTextEditor";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Axios } from "@/config/axios";
 import Image from "next/image";
 import { Input } from "../ui/input";
+import { FileIcon, PackageIcon, XIcon, UploadIcon, FileTextIcon, FileImageIcon, FilmIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface TaskFile {
+  id: string;
+  url: string;
+}
 
 interface TaskDetailsDialogProps {
   open: boolean;
@@ -40,6 +47,7 @@ interface TaskDetailsDialogProps {
     projectName?: string | null;
     createdAt: string;
     updatedAt: string;
+    taskFiles?: TaskFile[];
   };
   userId?: string;
   firstName?: string;
@@ -47,6 +55,16 @@ interface TaskDetailsDialogProps {
   avatar?: string | null;
   onTaskUpdate?: () => void;
 }
+
+interface UploadedFile {
+  id: string;
+  url: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 
 export function TaskDetailsDialog({
   open,
@@ -65,6 +83,15 @@ export function TaskDetailsDialog({
   );
   const [status, setStatus] = useState(task.status);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [taskFiles, setTaskFiles] = useState<TaskFile[]>(task.taskFiles || []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update taskFiles when task prop changes
+  useEffect(() => {
+    setTaskFiles(task.taskFiles || []);
+  }, [task.taskFiles]);
 
   const updateTask = async (updateData: {
     description?: string;
@@ -153,6 +180,166 @@ export function TaskDetailsDialog({
       setIsSaving(false);
     }
   };
+
+  const validateFileSize = (file: File): boolean => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`File "${file.name}" is too large. Maximum file size is 10MB.`);
+      return false;
+    }
+    return true;
+  };
+
+  const uploadFiles = async (files: FileList) => {
+    // Validate all files first
+    const validFiles = Array.from(files).filter(validateFileSize);
+    
+    if (validFiles.length === 0) {
+      return;
+    }
+
+    if (validFiles.length !== files.length) {
+      toast.warning(`${files.length - validFiles.length} file(s) were skipped due to size limit.`);
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      validFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+
+      const response = await Axios.post(
+        `${env.BACKEND_BASE_URL}/api/task/upload-task-files/${task.id}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.data?.success) {
+        const uploadedFiles: UploadedFile[] = response.data.data.files || [];
+        const updatedTaskFiles: TaskFile[] = response.data.data.task?.taskFiles || [];
+        
+        setTaskFiles(updatedTaskFiles);
+        
+        toast.success(
+          `${uploadedFiles.length} file(s) uploaded successfully`
+        );
+        
+        // Update the task data
+        onTaskUpdate?.();
+      } else {
+        throw new Error(response.data.message || "Failed to upload files");
+      }
+    } catch (error) {
+      console.error("File upload error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload files"
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (files: FileList) => {
+    await uploadFiles(files);
+  };
+  
+  const handleFileDelete = async (fileId: string) => {
+    const fileToDelete = taskFiles.find(f => f.id === fileId);
+    if (!fileToDelete) {
+      toast.error("File not found");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await Axios.delete(
+        `${env.BACKEND_BASE_URL}/api/task/delete-task-file?taskId=${task.id}&fileId=${fileId}`
+      );
+
+      if (response.data?.success) {
+        // Optimistically update the UI
+        setTaskFiles(prev => prev.filter(f => f.id !== fileId));
+        toast.success(`File "${getFileNameFromUrl(fileToDelete.url)}" deleted successfully`);
+        onTaskUpdate?.();
+      } else {
+        throw new Error(response.data.message || "Failed to delete file");
+      }
+    } catch (error) {
+      console.error("File delete error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete file"
+      );
+      // Revert to original task files on error
+      setTaskFiles(task.taskFiles || []);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getFileIcon = (mimeType?: string) => {
+    if (!mimeType) return FileIcon;
+    if (mimeType.startsWith('image/')) return FileImageIcon;
+    if (mimeType.startsWith('video/')) return FilmIcon;
+    if (mimeType.startsWith('text/')) return FileTextIcon;
+    return FileIcon;
+  };
+
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      await handleFileUpload(files);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      await handleFileUpload(files);
+    }
+    
+    // Reset the input value to allow uploading the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const getFileNameFromUrl = (url: string): string => {
+    try {
+      const urlParts = url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      
+      // Remove the nanoid prefix (format: nanoid-filename)
+      const dashIndex = fileName.indexOf('-');
+      if (dashIndex !== -1) {
+        return decodeURIComponent(fileName.substring(dashIndex + 1));
+      }
+      
+      return decodeURIComponent(fileName);
+    } catch (error) {
+      return 'Unknown file';
+    }
+  };
+
+  
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -259,6 +446,113 @@ export function TaskDetailsDialog({
               </div>
             </div>
 
+            {/* File Upload Section */}
+            <div className="grid gap-2">
+              <h4 className="font-medium flex items-center gap-2">
+                <PackageIcon className="h-4 w-4" /> Task Files
+                {taskFiles.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {taskFiles.length}
+                  </Badge>
+                )}
+              </h4>
+              
+              {/* Upload Area */}
+              <div
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-6 transition-colors",
+                  "hover:border-primary/50 cursor-pointer",
+                  isDragging ? "border-primary bg-primary/5" : "border-muted",
+                  isUploading && "pointer-events-none opacity-50"
+                )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+              >
+                <div className="flex flex-col items-center gap-2 text-center">
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                      <p className="text-sm font-medium">
+                        Uploading files...
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <UploadIcon className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-sm font-medium">
+                        Drag & drop files here or click to browse
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Support all file types up to 10MB • Multiple files supported
+                      </p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  multiple
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Files List */}
+              {taskFiles.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    {taskFiles.length} file(s) attached
+                  </p>
+                  {taskFiles.map((file) => {
+                    const fileName = getFileNameFromUrl(file.url);
+                    const FileTypeIcon = getFileIcon();
+                    
+                    return (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-md bg-background">
+                            <FileTypeIcon className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{fileName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Attached file
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            asChild
+                          >
+                            <a href={file.url} target="_blank" rel="noopener noreferrer">
+                              <FileIcon className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 hover:text-destructive"
+                            onClick={() => handleFileDelete(file.id)}
+                          >
+                            <XIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="py-4">
               <h4 className="font-medium mb-2">Description:</h4>
               <RichTextEditor
@@ -274,7 +568,7 @@ export function TaskDetailsDialog({
           <Button
             className="px-8 py-2"
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || isUploading}
           >
             {isSaving ? (
               <>

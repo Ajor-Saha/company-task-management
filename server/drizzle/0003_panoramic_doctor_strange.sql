@@ -1,1 +1,0 @@
-ALTER TYPE "public"."project_status" ADD VALUE 'in-progress';

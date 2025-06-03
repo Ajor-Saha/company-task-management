@@ -26,20 +26,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import RichTextEditor from "@/components/editor/RichTextEditor"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+import EnhancedTaskList from "@/app/(admin)/project/_components/EnhancedTaskList"
 
 // Define the type for the RichTextEditor ref
 type RichTextEditorHandle = {
@@ -57,54 +45,19 @@ interface ProjectDetails {
   endDate: string
 }
 
+
 interface TaskMetrics {
   total: number
-  "to-do": number
-  "in-progress": number
+  todo: number
+  inProgress: number
   review: number
   completed: number
   hold: number
-  completionPercentage: number
+  completionRate: number
+  overDueTasks: number
 }
 
-interface Task {
-  id: string
-  name: string
-  description?: string
-  status: "to-do" | "in-progress" | "review" | "completed" | "hold"
-  assignedUser: {
-    id: string
-    name: string
-    email: string
-    avatar?: string
-  }
-  dueDate: string
-  createdAt: string
-  priority: "low" | "medium" | "high"
-}
 
-interface TeamMember {
-  id: string
-  name: string
-  email: string
-  avatar?: string
-  role: string
-  joinedAt: string
-}
-
-interface ProjectNote {
-  id: string
-  content: string
-  createdAt: string
-  createdBy: {
-    id: string
-    name: string
-    avatar?: string
-  }
-}
-
-type SortField = "name" | "dueDate" | "status" | "priority"
-type SortOrder = "asc" | "desc"
 
 const statusOptions = [
   { value: "to-do", label: "To Do" },
@@ -119,441 +72,40 @@ const statusConfig = {
     label: "To Do",
     icon: ListTodo,
     color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    key: "todo"
   },
   "in-progress": {
     label: "In Progress",
     icon: Clock,
     color: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+    key: "inProgress"
   },
   review: {
     label: "In Review",
     icon: Eye,
     color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
+    key: "review"
   },
   completed: {
     label: "Completed",
     icon: CheckCircle2,
     color: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+    key: "completed"
   },
   hold: {
     label: "On Hold",
     icon: Pause,
     color: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+    key: "hold"
   },
 }
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(amount)
-}
-
-// Project Notes Component
-
-// Enhanced Task List Component (keeping the existing one but with minor improvements)
-const EnhancedTaskList = ({ projectId }: { projectId: string }) => {
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [userFilter, setUserFilter] = useState<string>("all")
-  const [sortField, setSortField] = useState<SortField>("dueDate")
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
-
-  const priorityConfig = {
-    low: { label: "Low", color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
-    medium: { label: "Medium", color: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" },
-    high: { label: "High", color: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" },
-  }
-
-  // Mock data - replace with actual API call
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setIsLoading(true)
-      try {
-        // Mock data for demonstration
-        const mockTasks: Task[] = [
-          {
-            id: "1",
-            name: "Design user interface mockups",
-            description: "Create wireframes and mockups for the main dashboard",
-            status: "in-progress",
-            assignedUser: {
-              id: "user1",
-              name: "Alice Johnson",
-              email: "alice@example.com",
-              avatar: "/placeholder.svg?height=32&width=32",
-            },
-            dueDate: "2024-02-15",
-            createdAt: "2024-01-10",
-            priority: "high",
-          },
-          {
-            id: "2",
-            name: "Implement authentication system",
-            description: "Set up user login and registration functionality",
-            status: "to-do",
-            assignedUser: {
-              id: "user2",
-              name: "Bob Smith",
-              email: "bob@example.com",
-              avatar: "/placeholder.svg?height=32&width=32",
-            },
-            dueDate: "2024-02-20",
-            createdAt: "2024-01-12",
-            priority: "high",
-          },
-          {
-            id: "3",
-            name: "Write API documentation",
-            description: "Document all API endpoints and their usage",
-            status: "review",
-            assignedUser: {
-              id: "user3",
-              name: "Carol Davis",
-              email: "carol@example.com",
-              avatar: "/placeholder.svg?height=32&width=32",
-            },
-            dueDate: "2024-02-10",
-            createdAt: "2024-01-08",
-            priority: "medium",
-          },
-          {
-            id: "4",
-            name: "Set up CI/CD pipeline",
-            description: "Configure automated testing and deployment",
-            status: "completed",
-            assignedUser: {
-              id: "user4",
-              name: "David Wilson",
-              email: "david@example.com",
-              avatar: "/placeholder.svg?height=32&width=32",
-            },
-            dueDate: "2024-02-05",
-            createdAt: "2024-01-05",
-            priority: "medium",
-          },
-          {
-            id: "5",
-            name: "Database optimization",
-            description: "Optimize database queries for better performance",
-            status: "hold",
-            assignedUser: {
-              id: "user1",
-              name: "Alice Johnson",
-              email: "alice@example.com",
-              avatar: "/placeholder.svg?height=32&width=32",
-            },
-            dueDate: "2024-02-25",
-            createdAt: "2024-01-15",
-            priority: "low",
-          },
-        ]
-        setTasks(mockTasks)
-      } catch (error) {
-        console.error("Error fetching tasks:", error)
-        toast.error("Failed to fetch tasks")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchTasks()
-  }, [projectId])
-
-  // Get unique users for filter dropdown
-  const uniqueUsers = useMemo(() => {
-    const users = tasks.map((task) => task.assignedUser)
-    const uniqueUsersMap = new Map()
-    users.forEach((user) => {
-      if (!uniqueUsersMap.has(user.id)) {
-        uniqueUsersMap.set(user.id, user)
-      }
-    })
-    return Array.from(uniqueUsersMap.values())
-  }, [tasks])
-
-  // Filter and sort tasks
-  const filteredAndSortedTasks = useMemo(() => {
-    const filtered = tasks.filter((task) => {
-      const matchesSearch =
-        task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = statusFilter === "all" || task.status === statusFilter
-      const matchesUser = userFilter === "all" || task.assignedUser.id === userFilter
-
-      return matchesSearch && matchesStatus && matchesUser
-    })
-
-    // Sort tasks
-    filtered.sort((a, b) => {
-      let aValue: string | number
-      let bValue: string | number
-
-      switch (sortField) {
-        case "name":
-          aValue = a.name.toLowerCase()
-          bValue = b.name.toLowerCase()
-          break
-        case "dueDate":
-          aValue = new Date(a.dueDate).getTime()
-          bValue = new Date(b.dueDate).getTime()
-          break
-        case "status":
-          aValue = a.status
-          bValue = b.status
-          break
-        case "priority":
-          const priorityOrder = { low: 1, medium: 2, high: 3 }
-          aValue = priorityOrder[a.priority]
-          bValue = priorityOrder[b.priority]
-          break
-    default:
-          return 0
-      }
-
-      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1
-      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1
-      return 0
-    })
-
-    return filtered
-  }, [tasks, searchTerm, statusFilter, userFilter, sortField, sortOrder])
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-    } else {
-      setSortField(field)
-      setSortOrder("asc")
-    }
-  }
-
-  const formatTaskDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const today = new Date()
-    const diffTime = date.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays < 0) {
-      return `${Math.abs(diffDays)} days overdue`
-    } else if (diffDays === 0) {
-      return "Due today"
-    } else if (diffDays === 1) {
-      return "Due tomorrow"
-    } else {
-      return `Due in ${diffDays} days`
-    }
-  }
-
-  const isOverdue = (dateString: string) => {
-    return new Date(dateString) < new Date()
-  }
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin mr-2" />
-            <span>Loading tasks...</span>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Task Management</span>
-          <Badge variant="outline">{filteredAndSortedTasks.length} tasks</Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Filters and Search */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {Object.entries(statusConfig).map(([status, config]) => (
-                <SelectItem key={status} value={status}>
-                  {config.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={userFilter} onValueChange={setUserFilter}>
-            <SelectTrigger className="w-[180px]">
-              <User className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by user" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Users</SelectItem>
-              {uniqueUsers.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Tasks Table */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("name")} className="h-auto p-0 font-medium">
-                    Task Name
-                    {sortField === "name" &&
-                      (sortOrder === "asc" ? (
-                        <SortAsc className="ml-2 h-4 w-4" />
-                      ) : (
-                        <SortDesc className="ml-2 h-4 w-4" />
-                      ))}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("status")} className="h-auto p-0 font-medium">
-                    Status
-                    {sortField === "status" &&
-                      (sortOrder === "asc" ? (
-                        <SortAsc className="ml-2 h-4 w-4" />
-                      ) : (
-                        <SortDesc className="ml-2 h-4 w-4" />
-                      ))}
-                  </Button>
-                </TableHead>
-                <TableHead>Assigned User</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("dueDate")} className="h-auto p-0 font-medium">
-                    Due Date
-                    {sortField === "dueDate" &&
-                      (sortOrder === "asc" ? (
-                        <SortAsc className="ml-2 h-4 w-4" />
-                      ) : (
-                        <SortDesc className="ml-2 h-4 w-4" />
-                      ))}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("priority")} className="h-auto p-0 font-medium">
-                    Priority
-                    {sortField === "priority" &&
-                      (sortOrder === "asc" ? (
-                        <SortAsc className="ml-2 h-4 w-4" />
-                      ) : (
-                        <SortDesc className="ml-2 h-4 w-4" />
-                      ))}
-                  </Button>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedTasks.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No tasks found matching your criteria
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredAndSortedTasks.map((task) => {
-                  const StatusIcon = statusConfig[task.status].icon
-                  const isTaskOverdue = isOverdue(task.dueDate) && task.status !== "completed"
-
-                  return (
-                    <TableRow key={task.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{task.name}</div>
-                          {task.description && (
-                            <div className="text-sm text-muted-foreground mt-1">{task.description}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                          <StatusIcon className="h-3 w-3" />
-                          {statusConfig[task.status].label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={task.assignedUser.avatar || "/placeholder.svg"}
-                              alt={task.assignedUser.name}
-                            />
-                            <AvatarFallback>
-                              {task.assignedUser.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium text-sm">{task.assignedUser.name}</div>
-                            <div className="text-xs text-muted-foreground">{task.assignedUser.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <div className={`text-sm ${isTaskOverdue ? "text-red-600 font-medium" : ""}`}>
-                              {new Date(task.dueDate).toLocaleDateString()}
-                            </div>
-                            <div className={`text-xs ${isTaskOverdue ? "text-red-500" : "text-muted-foreground"}`}>
-                              {formatTaskDate(task.dueDate)}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={priorityConfig[task.priority].color}>
-                          {priorityConfig[task.priority].label}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
-  )
 }
 
 const DatePicker = ({
@@ -647,37 +199,26 @@ const ProjectDetails = () => {
 
     setIsLoadingMetrics(true)
     try {
-      // This would be your actual API endpoint for task metrics
-      const response = await Axios.get(`${env.BACKEND_BASE_URL}/api/project/task-metrics/${projectId}`)
+      const response = await Axios.get(`${env.BACKEND_BASE_URL}/api/project/get-project-stats/${projectId}`)
 
       if (response.data.success) {
-        setTaskMetrics(response.data.data)
+        const taskData = response.data.data.tasks
+        setTaskMetrics({
+          total: taskData.total,
+          todo: taskData.todo,
+          inProgress: taskData.inProgress,
+          review: taskData.review,
+          completed: taskData.completed,
+          hold: taskData.hold,
+          completionRate: taskData.completionRate,
+          overDueTasks: taskData.overDueTasks
+        })
       } else {
-        // Fallback with mock data if API doesn't exist yet
-        const mockMetrics: TaskMetrics = {
-          total: 24,
-          "to-do": 8,
-          "in-progress": 6,
-          review: 3,
-          completed: 5,
-          hold: 2,
-          completionPercentage: 20.8,
-        }
-        setTaskMetrics(mockMetrics)
+        toast.error(response.data.message || "Failed to fetch task metrics")
       }
     } catch (err) {
       console.error("Error fetching task metrics:", err)
-      // Fallback with mock data
-      const mockMetrics: TaskMetrics = {
-        total: 24,
-        "to-do": 8,
-        "in-progress": 6,
-        review: 3,
-        completed: 5,
-        hold: 2,
-        completionPercentage: 20.8,
-      }
-      setTaskMetrics(mockMetrics)
+      toast.error("An error occurred while fetching task metrics")
     } finally {
       setIsLoadingMetrics(false)
     }
@@ -1005,10 +546,10 @@ const ProjectDetails = () => {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
                           <span>Completion Rate</span>
-                          <span className="font-medium">{taskMetrics.completionPercentage.toFixed(1)}%</span>
+                          <span className="font-medium">{taskMetrics.completionRate.toFixed(1)}%</span>
                         </div>
-                        <Progress value={taskMetrics.completionPercentage} className="h-3" />
-                        {taskMetrics.completionPercentage < 15 && (
+                        <Progress value={taskMetrics.completionRate} className="h-3" />
+                        {taskMetrics.completionRate < 15 && (
                           <div className="flex items-center gap-2 text-sm text-amber-600">
                             <AlertCircle className="h-4 w-4" />
                             <span>Project is in early stages</span>
@@ -1022,8 +563,8 @@ const ProjectDetails = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {Object.entries(statusConfig).map(([status, config]) => {
                       const Icon = config.icon
-                      const count = taskMetrics[status as keyof TaskMetrics] as number
-                      const percentage = taskMetrics.total > 0 ? ((count / taskMetrics.total) * 100).toFixed(1) : "0"
+                      const metricCount = taskMetrics[config.key as keyof TaskMetrics] as number
+                      const percentage = taskMetrics.total > 0 ? ((metricCount / taskMetrics.total) * 100).toFixed(1) : "0"
 
                       return (
                         <Card key={status} className="relative overflow-hidden hover:shadow-md transition-shadow">
@@ -1035,7 +576,7 @@ const ProjectDetails = () => {
                               </Badge>
                             </div>
                             <div className="space-y-1">
-                              <p className="text-2xl font-bold">{count}</p>
+                              <p className="text-2xl font-bold">{metricCount}</p>
                               <p className="text-xs text-muted-foreground">{config.label}</p>
                             </div>
                           </CardContent>
@@ -1055,15 +596,15 @@ const ProjectDetails = () => {
 
                     <Card className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-blue-600">{taskMetrics["in-progress"]}</div>
+                        <div className="text-2xl font-bold text-blue-600">{taskMetrics.inProgress}</div>
                         <p className="text-sm text-muted-foreground">Active Tasks</p>
                       </CardContent>
                     </Card>
 
                     <Card className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-green-600">{taskMetrics.completed}</div>
-                        <p className="text-sm text-muted-foreground">Completed</p>
+                        <div className="text-2xl font-bold text-red-600">{taskMetrics.overDueTasks}</div>
+                        <p className="text-sm text-muted-foreground">Overdue Tasks</p>
                       </CardContent>
                     </Card>
                   </div>

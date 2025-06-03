@@ -726,6 +726,7 @@ export const getProjectStats = asyncHandler(
         .select({
           id: taskTable.id,
           status: taskTable.status,
+          endDate: taskTable.endDate,
         })
         .from(taskTable)
         .where(eq(taskTable.projectId, projectId));
@@ -739,6 +740,14 @@ export const getProjectStats = asyncHandler(
         hold: tasks.filter(task => task.status === "hold").length,
         review: tasks.filter(task => task.status === "review").length,
       }];
+
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Normalize to start of day
+      const overDueTasks = tasks.filter(task =>
+        task.endDate &&
+        new Date(task.endDate) < now &&
+        task.status !== "completed"
+      ).length;
 
       // Calculate completion rate
       const completionRate =
@@ -758,6 +767,7 @@ export const getProjectStats = asyncHandler(
               hold: taskStats[0].hold,
               review: taskStats[0].review,
               completionRate: completionRate,
+              overDueTasks: overDueTasks,
             },
           },
           "Project statistics retrieved successfully"

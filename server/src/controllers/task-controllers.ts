@@ -1,10 +1,14 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { v4 as uuidv4 } from "uuid";
+import { nanoid } from "nanoid";
 import { ApiResponse } from "../utils/api-response";
 import { db } from "../db";
 import { and, eq, isNull, desc } from "drizzle-orm";
 import { taskTable, projectTable, userTable } from "../db/schema";
+import { createR2Client } from "../utils/upload-r2";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { promises as fs } from "fs";
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   try {
@@ -241,6 +245,7 @@ export const getTasksByProjectId = asyncHandler(
           description: taskTable.description,
           status: taskTable.status,
           endDate: taskTable.endDate,
+          taskFiles: taskTable.taskFiles,
           createdAt: taskTable.createdAt,
           updatedAt: taskTable.updatedAt,
           assignedTo: {
@@ -434,6 +439,7 @@ export const getRecentTasks = asyncHandler(
           status: taskTable.status,
           description: taskTable.description,
           endDate: taskTable.endDate,
+          taskFiles: taskTable.taskFiles,
           createdAt: taskTable.createdAt,
           projectId: taskTable.projectId,
           projectName: projectTable.name, // No need for `.nullable()`
@@ -477,6 +483,7 @@ export const getAssignedMeTasks = asyncHandler(
           status: taskTable.status,
           description: taskTable.description,
           endDate: taskTable.endDate,
+          taskFiles: taskTable.taskFiles,
           createdAt: taskTable.createdAt,
           projectId: taskTable.projectId,
           projectName: projectTable.name, // No need for `.nullable()`
@@ -578,20 +585,24 @@ export const getEmployeeTaskStats = asyncHandler(
       );
 
       return res.status(200).json(
-        new ApiResponse(200, {
-          employees: employeeStats,
-          summary: {
-            totalEmployees: employees.length,
-            totalTasks: employeeStats.reduce(
-              (sum, stat) => sum + stat.totalTasks,
-              0
-            ),
-            totalOverdue: employeeStats.reduce(
-              (sum, stat) => sum + stat.overdue,
-              0
-            ),
+        new ApiResponse(
+          200,
+          {
+            employees: employeeStats,
+            summary: {
+              totalEmployees: employees.length,
+              totalTasks: employeeStats.reduce(
+                (sum, stat) => sum + stat.totalTasks,
+                0
+              ),
+              totalOverdue: employeeStats.reduce(
+                (sum, stat) => sum + stat.overdue,
+                0
+              ),
+            },
           },
-        }, "Employee task statistics fetched successfully")
+          "Employee task statistics fetched successfully"
+        )
       );
     } catch (error) {
       console.error("Error fetching employee task statistics:", error);
@@ -601,5 +612,288 @@ export const getEmployeeTaskStats = asyncHandler(
     }
   }
 );
+
+export const uploadTaskFiles = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      // Ensure the authenticated user exists
+      const authUser = req.user;
+      if (!authUser) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: User is missing"));
+      }
+
+      const { taskId } = req.params;
+      const companyId = authUser.companyId;
+
+      // Validate required fields
+      if (!taskId || taskId.trim() === "") {
+        return res
+          .status(400)
+          .json(new ApiResponse(400, {}, "Task ID is required"));
+      }
+
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+      }
+
+      // Check if task exists and user has access to it
+      const [existingTask] = await db
+        .select({
+          id: taskTable.id,
+          projectId: taskTable.projectId,
+          assignedTo: taskTable.assignedTo,
+          taskFiles: taskTable.taskFiles,
+        })
+        .from(taskTable)
+        .where(eq(taskTable.id, taskId));
+
+      if (!existingTask) {
+        return res.status(404).json(new ApiResponse(404, {}, "Task not found"));
+      }
+
+      // For personal tasks, check if the task is assigned to the current user
+      if (existingTask.assignedTo !== authUser.userId) {
+        return res
+          .status(403)
+          .json(
+            new ApiResponse(
+              403,
+              {},
+              "Unauthorized: You can only upload files to your own tasks"
+            )
+          );
+      }
+
+      // Check for files from middleware
+      let files = req.files;
+
+      // If files is not an array, make it an array
+      if (files && !Array.isArray(files)) {
+        files = [files];
+      }
+
+      if (!files || !Array.isArray(files) || files.length === 0) {
+        return res
+          .status(400)
+          .json(new ApiResponse(400, {}, "No files uploaded"));
+      }
+
+      // Create R2 client (S3-compatible client)
+      const r2 = createR2Client();
+
+      const uploadedFiles = [];
+
+      // Process each file
+      for (const file of files) {
+        if (!file || !file.filepath) {
+          continue; // Skip invalid files
+        }
+
+        try {
+          // Read the file from the temporary path
+          const buffer = await fs.readFile(file.filepath);
+          const fileId = nanoid();
+          const uniqueFileName = `${fileId}-${encodeURIComponent(
+            file.originalFilename || "unnamed"
+          )}`;
+
+          // Upload file to R2
+          await r2.send(
+            new PutObjectCommand({
+              Bucket: process.env.BUCKET_NAME!,
+              Key: uniqueFileName,
+              Body: buffer,
+              ContentType: file.mimetype || "application/octet-stream",
+            })
+          );
+
+          // Clean up the temporary file
+          await fs.unlink(file.filepath);
+
+          // Construct file URL
+          const fileUrl = `${process.env.PUBLIC_ACCESS_URL}/${uniqueFileName}`;
+
+          uploadedFiles.push({
+            id: fileId,
+            url: fileUrl,
+            originalName: file.originalFilename,
+            size: file.size,
+            mimeType: file.mimetype,
+          });
+        } catch (fileError) {
+          console.error(
+            `Error processing file ${file.originalFilename}:`,
+            fileError
+          );
+          // Clean up the temporary file in case of error
+          try {
+            await fs.unlink(file.filepath);
+          } catch (unlinkError) {
+            console.error("Error cleaning up temporary file:", unlinkError);
+          }
+        }
+      }
+
+      if (uploadedFiles.length === 0) {
+        return res
+          .status(400)
+          .json(
+            new ApiResponse(400, {}, "No files were successfully uploaded")
+          );
+      }
+
+      // Prepare new task files for database (only id and url as per schema)
+      const newTaskFiles = uploadedFiles.map((file) => ({
+        id: file.id,
+        url: file.url,
+      }));
+
+      // Get existing task files and append new ones
+      const existingTaskFiles = (existingTask.taskFiles as any[]) || [];
+      const updatedTaskFiles = [...existingTaskFiles, ...newTaskFiles];
+
+      // Update task in database with new files
+      const [updatedTask] = await db
+        .update(taskTable)
+        .set({
+          taskFiles: updatedTaskFiles,
+        })
+        .where(eq(taskTable.id, taskId))
+        .returning();
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            files: uploadedFiles,
+            task: {
+              id: updatedTask.id,
+              taskFiles: updatedTask.taskFiles,
+            },
+          },
+          "Files uploaded and saved to task successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal server error"));
+    }
+  }
+);
+
+export const deleteTaskFile = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const authUser = req.user;
+    if (!authUser) {
+      return res
+        .status(401)
+        .json(new ApiResponse(401, {}, "Unauthorized: User is missing"));
+    }
+
+    const { taskId, fileId } = req.query;
+
+    // Validate required fields
+    if (!taskId || typeof taskId !== 'string' || !fileId || typeof fileId !== 'string') {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "Task ID and File ID are required"));
+    }
+
+
+    // Check if task exists and user has access to it
+    const [existingTask] = await db
+      .select({
+        id: taskTable.id,
+        projectId: taskTable.projectId,
+        assignedTo: taskTable.assignedTo,
+        taskFiles: taskTable.taskFiles,
+      })
+      .from(taskTable)
+      .where(eq(taskTable.id, taskId));
+
+    if (!existingTask) {
+      return res.status(404).json(new ApiResponse(404, {}, "Task not found"));
+    }
+
+    // For personal tasks, check if the task is assigned to the current user
+    if (existingTask.assignedTo !== authUser.userId) {
+      return res
+        .status(403)
+        .json(
+          new ApiResponse(
+            403,
+            {},
+            "Unauthorized: You can only manage files of your own tasks"
+          )
+        );
+    }
+
+    // Find the file in the task's files
+    const taskFiles = existingTask.taskFiles as { id: string; url: string }[] || [];
+    const fileToDelete = taskFiles.find(file => file.id === fileId);
+
+    if (!fileToDelete) {
+      return res.status(404).json(new ApiResponse(404, {}, "File not found in task"));
+    }
+
+    // Extract the file key from the URL
+    const fileKey = fileToDelete.url.split('/').pop();
+    if (!fileKey) {
+      return res.status(400).json(new ApiResponse(400, {}, "Invalid file URL"));
+    }
+
+    // Create R2 client
+    const r2 = createR2Client();
+
+    try {
+      // Delete file from R2
+      await r2.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.BUCKET_NAME!,
+          Key: fileKey,
+        })
+      );
+    } catch (error) {
+      console.error("Error deleting file from R2:", error);
+      // Continue with task update even if R2 deletion fails
+    }
+
+    // Update task files list
+    const updatedFiles = taskFiles.filter(file => file.id !== fileId);
+
+    // Update task in database
+    const [updatedTask] = await db
+      .update(taskTable)
+      .set({
+        taskFiles: updatedFiles,
+      })
+      .where(eq(taskTable.id, taskId))
+      .returning();
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          task: {
+            id: updatedTask.id,
+            taskFiles: updatedTask.taskFiles,
+          },
+        },
+        "File deleted successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error deleting task file:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal server error"));
+  }
+});
 
 

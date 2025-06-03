@@ -1,5 +1,5 @@
 {
-  "id": "53405307-5c25-4b5c-9bdb-b08aecb6312b",
+  "id": "60ac83aa-5fe2-4642-bf65-133ee637c2a2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -40,6 +40,12 @@
         },
         "avatar": {
           "name": "avatar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "salary": {
+          "name": "salary",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -214,6 +220,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "extra_cost": {
+          "name": "extra_cost",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
         "status": {
           "name": "status",
           "type": "project_status",
@@ -227,6 +240,19 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -287,12 +313,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "budget": {
-          "name": "budget",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "status": {
           "name": "status",
           "type": "task_status",
@@ -305,13 +325,26 @@
           "name": "project_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "assigned_to": {
           "name": "assigned_to",
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "task_files": {
+          "name": "task_files",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
         },
         "created_at": {
           "name": "created_at",
@@ -367,6 +400,12 @@
       "name": "tbl_project_assignments",
       "schema": "",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
         "project_id": {
           "name": "project_id",
           "type": "text",
@@ -421,6 +460,84 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.tbl_message": {
+      "name": "tbl_message",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sender_id": {
+          "name": "sender_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "current_timestamp"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tbl_message_sender_id_tbl_user_user_id_fk": {
+          "name": "tbl_message_sender_id_tbl_user_user_id_fk",
+          "tableFrom": "tbl_message",
+          "tableTo": "tbl_user",
+          "columnsFrom": [
+            "sender_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tbl_message_project_id_tbl_project_id_fk": {
+          "name": "tbl_message_project_id_tbl_project_id_fk",
+          "tableFrom": "tbl_message",
+          "tableTo": "tbl_project",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -440,7 +557,8 @@
         "to-do",
         "hold",
         "review",
-        "completed"
+        "completed",
+        "in-progress"
       ]
     },
     "public.task_status": {
@@ -448,6 +566,7 @@
       "schema": "public",
       "values": [
         "to-do",
+        "in-progress",
         "hold",
         "review",
         "completed"

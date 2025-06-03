@@ -6,6 +6,7 @@ import { File } from 'formidable';
 declare module 'express' {
   interface Request {
     avatar?: File;
+    files?: File | File[];
   }
 }
 
@@ -24,6 +25,34 @@ export const uploadMiddleware = (req: Request, res: Response, next: NextFunction
       const file = Array.isArray(avatarFile) ? avatarFile[0] : avatarFile;
       req.avatar = file; // Attach the file to req.avatar
     }
+    next();
+  });
+};
+
+export const uploadFilesMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const form = new IncomingForm({
+    multiples: true, // Allow multiple files
+    maxFileSize: 10 * 1024 * 1024, // 10MB max file size
+  });
+  
+  form.parse(req, (err, fields, files) => {
+    if (err) {
+      console.error('Form parsing error:', err);
+      return res.status(400).json({
+        success: false,
+        message: 'File parsing error',
+        error: err.message
+      });
+    }
+    
+    console.log('Parsed files:', files);
+    
+    // Handle the 'files' field specifically
+    const uploadedFiles = files.files;
+    if (uploadedFiles) {
+      req.files = uploadedFiles;
+    }
+    
     next();
   });
 };

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TaskFile } from "@/types/task";
 
 type Task = {
   id: string;
@@ -28,6 +29,7 @@ type Task = {
   endDate?: string | null;
   projectId?: string | null;
   projectName?: string | null;
+  taskFiles?: TaskFile[];
   createdAt: string;
   updatedAt: string;
 };
