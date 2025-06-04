@@ -403,7 +403,10 @@ const ProjectDetails = () => {
                 <Workflow className="h-5 w-5 mr-2" />
                 Assigned Tasks
               </h3>
-              <SubtasksTable projectId={project.id} />
+              <SubtasksTable 
+                projectId={project.id} 
+                projectName={project.name}
+              />
             </div>
           </div>
         </CardContent>

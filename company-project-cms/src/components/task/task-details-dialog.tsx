@@ -220,7 +220,9 @@ export function TaskDetailsDialog({
         endDate: date ? date.toISOString() : null,
       });
       if (updatedTask) {
+        toast.success("Task updated successfully");
         onTaskUpdate?.();
+        // Close the dialog after successful save
         onOpenChange(false);
       }
     } catch (error) {

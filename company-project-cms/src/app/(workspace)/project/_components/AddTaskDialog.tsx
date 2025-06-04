@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { AxiosError } from "axios";
+import RichTextEditor, { RichTextEditorHandle } from "@/components/editor/RichTextEditor";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AddTaskDialogProps {
   projectId: string;
@@ -56,6 +58,7 @@ interface Employee {
 const taskSchema = z.object({
   name: z.string().min(3, { message: "Task name must be at least 3 characters" }),
   assignee: z.string().min(1, { message: "Please select an assignee" }),
+  description: z.string().min(5, { message: "Description must be at least 5 characters" }),
   dueDate: z.string().optional(),
 });
 
@@ -66,15 +69,41 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const editorRef = useRef<RichTextEditorHandle>(null);
+  const [editorKey, setEditorKey] = useState(0);
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       name: "",
       assignee: "",
+      description: "",
       dueDate: "",
     },
   });
+
+  // Reset form and editor when dialog closes
+  useEffect(() => {
+    if (!dialogOpen) {
+      form.reset();
+      setEditorKey(prev => prev + 1);
+    }
+  }, [dialogOpen, form]);
+
+  // Update form description field when editor content changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const content = editorRef.current?.getContent() || "";
+      if (content !== form.getValues("description")) {
+        form.setValue("description", content, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [form]);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -96,6 +125,15 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   }, [dialogOpen, fetchEmployees]);
 
   const onSubmit = async (data: z.infer<typeof taskSchema>) => {
+    const description = editorRef.current?.getContent() || "";
+    if (!description || description.trim().length < 5) {
+      form.setError("description", {
+        type: "manual",
+        message: "Description must be at least 5 characters",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const endDate = data.dueDate ? new Date(data.dueDate).toISOString() : null;
@@ -104,6 +142,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
         {
           name: data.name,
           assignedTo: data.assignee,
+          description,
           projectId,
           endDate,
           status: "to-do",
@@ -113,6 +152,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
         toast.success(response.data.message || "Task added successfully");
         onTaskAdded();
         form.reset();
+        setEditorKey(prev => prev + 1);
         setDialogOpen(false);
       } else {
         console.error("Add Task Error:", response.data.message);
@@ -150,89 +190,122 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
           Add Task
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200">
+      <DialogContent className="max-w-[425px] lg:max-w-[650px] p-0 bg-white dark:bg-slate-950 text-gray-800 dark:text-gray-200">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <DialogHeader>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-[calc(100vh-200px)] max-h-[700px]">
+            <DialogHeader className="px-6 pt-6 pb-4 flex-none">
               <DialogTitle>Add New Task</DialogTitle>
               <DialogDescription>
                 Enter the details for the new task. Click save when you're done.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="name" className="text-right">
-                      Name
-                    </FormLabel>
-                    <Input
-                      id="name"
-                      {...field}
-                      className="col-span-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="assignee"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="assignee" className="text-right">
-                      Assignee
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select Assignee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableEmployees.map((employee) => (
-                          <SelectItem key={employee.userId} value={employee.userId}>
-                            <div className="flex items-center gap-2">
-                              <Image
-                                src={employee.avatar || "/asset/avatar-pic.png"}
-                                alt={employee.firstName}
-                                width={24}
-                                height={24}
-                                className="rounded-full object-cover"
-                              />
-                              <span>
-                                {employee.firstName} {employee.lastName}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="dueDate" className="text-right">
-                      Due Date
-                    </FormLabel>
-                    <Input
-                      type="date"
-                      id="dueDate"
-                      {...field}
-                      className="col-span-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
+
+            <ScrollArea className="flex-1 px-6 overflow-y-auto">
+              <div className="grid gap-6 py-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel htmlFor="name" className="text-right">
+                        Name
+                      </FormLabel>
+                      <div className="col-span-3">
+                        <Input
+                          id="name"
+                          placeholder="Enter task name"
+                          {...field}
+                          className="w-full text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                        />
+                        <FormMessage className="text-xs mt-1" />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="assignee"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel htmlFor="assignee" className="text-right">
+                        Assignee
+                      </FormLabel>
+                      <div className="col-span-3">
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select Assignee" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableEmployees.map((employee) => (
+                              <SelectItem key={employee.userId} value={employee.userId}>
+                                <div className="flex items-center gap-2">
+                                  <Image
+                                    src={employee.avatar || "/asset/avatar-pic.png"}
+                                    alt={employee.firstName}
+                                    width={24}
+                                    height={24}
+                                    className="rounded-full object-cover"
+                                  />
+                                  <span>
+                                    {employee.firstName} {employee.lastName}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-xs mt-1" />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-start gap-4">
+                      <FormLabel htmlFor="description" className="text-right pt-2">
+                        Description
+                      </FormLabel>
+                      <div className="col-span-3">
+                        <RichTextEditor
+                          ref={editorRef}
+                          initialContent=""
+                          key={`add-task-editor-${editorKey}`}
+                        />
+                        <FormMessage className="text-xs mt-1" />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel htmlFor="dueDate" className="text-right">
+                        Due Date
+                      </FormLabel>
+                      <div className="col-span-3">
+                        <Input
+                          type="date"
+                          id="dueDate"
+                          {...field}
+                          className="w-full text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                        />
+                        <FormMessage className="text-xs mt-1" />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="p-6 mt-auto border-t flex-none">
+              <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

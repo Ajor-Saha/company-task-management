@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,11 +30,14 @@ import { AxiosError } from "axios";
 import { taskSchema } from "@/schemas/task-schema";
 import RichTextEditor, { RichTextEditorHandle } from "../editor/RichTextEditor";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRouter } from "next/navigation";
 
 const AddTask = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef<RichTextEditorHandle>(null);
+  const [editorKey, setEditorKey] = useState(0);
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
@@ -45,13 +48,45 @@ const AddTask = () => {
     },
   });
 
+  // Reset form and editor when dialog closes
+  useEffect(() => {
+    if (!dialogOpen) {
+      form.reset();
+      setEditorKey(prev => prev + 1);
+    }
+  }, [dialogOpen, form]);
+
+  // Update form description field when editor content changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const content = editorRef.current?.getContent() || "";
+      if (content !== form.getValues("description")) {
+        form.setValue("description", content, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [form]);
+
   const onSubmit = async (data: z.infer<typeof taskSchema>) => {
+    const description = editorRef.current?.getContent() || "";
+    if (!description || description.trim().length < 5) {
+      form.setError("description", {
+        type: "manual",
+        message: "Description must be at least 5 characters",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const endDate = data.dueDate
         ? new Date(data.dueDate).toISOString()
         : null;
-      const description = editorRef.current?.getContent() || "";
+
       const response = await Axios.post(
         `${env.BACKEND_BASE_URL}/api/task/create-personal-task`,
         {
@@ -64,7 +99,19 @@ const AddTask = () => {
       if (response.data?.success) {
         toast.success(response.data.message || "Task added successfully");
         form.reset();
+        setEditorKey(prev => prev + 1);
         setDialogOpen(false);
+        
+        // Show loading toast
+        toast.loading("Refreshing page...");
+        
+        // Short delay to ensure the success message is seen
+        setTimeout(() => {
+          // Refresh the page
+          router.refresh();
+          // Force a hard reload if needed
+          window.location.reload();
+        }, 1000);
       } else {
         console.error("Add Task Error:", response.data.message);
         toast.error(response.data.message || "Failed to add task");
@@ -101,17 +148,18 @@ const AddTask = () => {
           </svg>
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-[425px] lg:max-w-[650px] h-[450px] bg-white dark:bg-slate-950 text-gray-800 dark:text-gray-200">
+      <DialogContent className="max-w-[425px] lg:max-w-[650px] p-0 bg-white dark:bg-slate-950 text-gray-800 dark:text-gray-200">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col">
-            <DialogHeader className="px-6 pt-6 pb-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-[calc(100vh-200px)] max-h-[700px]">
+            <DialogHeader className="px-6 pt-6 pb-4 flex-none">
               <DialogTitle>Add New Task</DialogTitle>
               <DialogDescription>
                 Enter the details for the new task. Click save when you're done.
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-1 px-6">
-              <div className="grid gap-4 py-4">
+
+            <ScrollArea className="flex-1 px-6 overflow-y-auto">
+              <div className="grid gap-6 py-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -120,12 +168,15 @@ const AddTask = () => {
                       <FormLabel htmlFor="name" className="text-right">
                         Name
                       </FormLabel>
-                      <Input
-                        id="name"
-                        {...field}
-                        className="col-span-3 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
-                      />
-                      <FormMessage />
+                      <div className="col-span-3">
+                        <Input
+                          id="name"
+                          placeholder="Enter task name"
+                          {...field}
+                          className="w-full text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                        />
+                        <FormMessage className="text-xs mt-1" />
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -141,10 +192,10 @@ const AddTask = () => {
                       <div className="col-span-3">
                         <RichTextEditor
                           ref={editorRef}
-                          initialContent={field.value || ""}
-                          key="add-task-editor"
+                          initialContent=""
+                          key={`add-task-editor-${editorKey}`}
                         />
-                        <FormMessage />
+                        <FormMessage className="text-xs mt-1" />
                       </div>
                     </FormItem>
                   )}
@@ -158,19 +209,22 @@ const AddTask = () => {
                       <FormLabel htmlFor="dueDate" className="text-right">
                         Due Date
                       </FormLabel>
-                      <Input
-                        type="date"
-                        id="dueDate"
-                        {...field}
-                        className="col-span-3 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
-                      />
-                      <FormMessage />
+                      <div className="col-span-3">
+                        <Input
+                          type="date"
+                          id="dueDate"
+                          {...field}
+                          className="w-full text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                        />
+                        <FormMessage className="text-xs mt-1" />
+                      </div>
                     </FormItem>
                   )}
                 />
               </div>
             </ScrollArea>
-            <DialogFooter className="px-6 py-4">
+
+            <DialogFooter className="p-6 mt-auto border-t flex-none">
               <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <>
