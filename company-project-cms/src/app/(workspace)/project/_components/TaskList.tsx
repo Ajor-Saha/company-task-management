@@ -36,7 +36,8 @@ import { ColorRing } from "react-loader-spinner";
 import AddTaskDialog from "./AddTaskDialog";
 import Image from "next/image";
 import { toast } from "sonner";
-import SubtaskDetailsDialog from "./SubtaskDetailsDialog";
+import { TaskDetailsDialog } from "@/components/task/task-details-dialog";
+import { TaskFile } from "@/types/task";
 
 interface AssignedTo {
   userId: string;
@@ -50,7 +51,9 @@ export interface Subtask {
   name: string;
   description: string | null;
   assignedTo: AssignedTo;
-  projectId: string;
+  projectId?: string;
+  projectName?: string;
+  taskFiles?: TaskFile[];
   endDate: string | null;
   status: string;
   createdAt: string;
@@ -59,15 +62,15 @@ export interface Subtask {
 
 interface SubtasksTableProps {
   projectId: string;
+  projectName: string;
 }
 
-const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
+const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId, projectName }) => {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loading, setLoading] = useState(false);
-  const [availableAssignees, setAvailableAssignees] = useState<AssignedTo[]>(
-    []
-  );
-  const [dialogOpen, setDialogOpen] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Subtask | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [availableAssignees, setAvailableAssignees] = useState<AssignedTo[]>([]);
 
   // Fetch available assignees (users) from the API
   const fetchAssignees = useCallback(async () => {
@@ -189,7 +192,6 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
     }
   };
 
-  // Fetch tasks from API
   const fetchProjectTasks = useCallback(async () => {
     setLoading(true);
     try {
@@ -215,6 +217,15 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
     fetchProjectTasks();
   }, [fetchProjectTasks]);
 
+  // Handle dialog close
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      fetchProjectTasks();
+      setSelectedTask(null);
+    }
+    setIsDetailsDialogOpen(open);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center">
@@ -232,7 +243,6 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
     );
   }
 
-  
   return (
     <div className="p-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       <div className="flex justify-between items-center mb-2">
@@ -328,7 +338,10 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
                   </Popover>
                  <button
                     type="button"
-                    onClick={() => setDialogOpen(subtask.id)}
+                    onClick={() => {
+                      setSelectedTask(subtask);
+                      setIsDetailsDialogOpen(true);
+                    }}
                     className="text-left hover:underline ml-2"
                   >
                     {subtask.name}
@@ -336,13 +349,30 @@ const SubtasksTable: React.FC<SubtasksTableProps> = ({ projectId }) => {
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     ({subtask.status})
                   </span>
-                  {dialogOpen === subtask.id && (
-                    <SubtaskDetailsDialog
-                      open={dialogOpen === subtask.id}
-                      onOpenChange={(open) => setDialogOpen(open ? subtask.id : null)}
-                      subtask={subtask}
-                      updateTask={updateTask}
-                      onTaskUpdated={fetchProjectTasks}
+                  {selectedTask && (
+                    <TaskDetailsDialog
+                      open={isDetailsDialogOpen}
+                      onOpenChange={handleDialogClose}
+                      task={{
+                        id: selectedTask.id,
+                        name: selectedTask.name,
+                        status: selectedTask.status,
+                        description: selectedTask.description,
+                        endDate: selectedTask.endDate,
+                        projectId,
+                        projectName,
+                        createdAt: selectedTask.createdAt,
+                        updatedAt: selectedTask.updatedAt,
+                        taskFiles: selectedTask.taskFiles || [],
+                      }}
+                      userId={selectedTask.assignedTo.userId}
+                      firstName={selectedTask.assignedTo.firstName}
+                      lastName={selectedTask.assignedTo.lastName}
+                      avatar={selectedTask.assignedTo.avatar}
+                      onTaskUpdate={() => {
+                        // Just dispatch the event, don't close the dialog
+                        window.dispatchEvent(new CustomEvent('task-updated'));
+                      }}
                     />
                   )}
                 </TableCell>
