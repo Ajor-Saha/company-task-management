@@ -116,10 +116,10 @@ export default function EditProjectDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       {project && (
-        <DialogContent className="sm:max-w-[500px] md:w-[700px]">
+        <DialogContent className="sm:max-w-[500px] md:w-[700px] bg-gray-800/30 backdrop-blur-sm border border-gray-800/50 text-white">
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white dark:text-gray-400">
               Modify the project details and save your changes.
             </DialogDescription>
           </DialogHeader>
@@ -249,3 +249,5 @@ export default function EditProjectDialog({
     </Dialog>
   );
 }
+
+

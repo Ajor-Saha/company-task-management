@@ -143,10 +143,10 @@ export default function AssignEmployeeDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       {project && (
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] bg-gray-800/30 backdrop-blur-sm border border-gray-800/50 text-white">
           <DialogHeader>
             <DialogTitle>Assign Employee to {project.name}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription  className="text-white dark:text-gray-400">
               Select an employee to assign to this project.
             </DialogDescription>
           </DialogHeader>
@@ -232,3 +232,4 @@ export default function AssignEmployeeDialog({
     </Dialog>
   );
 }
+
