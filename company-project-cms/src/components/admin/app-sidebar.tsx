@@ -14,6 +14,7 @@ import {
   Plus,
   PlusCircle,
   SettingsIcon,
+  Megaphone,
   UserCog,
   Users,
 } from "lucide-react";
@@ -77,6 +78,23 @@ const sidebarData = {
           title: "Password Manage",
           url: "/settings/password-manage",
           icon: <KeyRound size={16} />,
+        },
+      ],
+    },
+    {
+      title: "Announcements",
+      url: "/announcements",
+      icon: <Megaphone size={20} />,
+      items: [
+        {
+          title: "Create new post",
+          url: "/announcements/create-post",
+          icon: <img src="/asset/anouncementAdd.png" alt="Icon" width={16} height={16} />,
+        },
+        {
+          title: "Display all post",
+          url: "/announcements/display-post",
+          icon: <img src="/asset/announceShow.png" alt="Icon" width={16} height={16} />,
         },
       ],
     }
