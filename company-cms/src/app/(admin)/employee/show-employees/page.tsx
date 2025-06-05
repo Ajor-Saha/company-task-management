@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Loader2 } from "lucide-react";
+import { MoreHorizontal, Loader2,Delete } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -40,6 +40,19 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import { ColorRing } from "react-loader-spinner";
@@ -110,6 +123,9 @@ export default function EmployeeTable() {
     totalPages: 0,
   });
 
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   // Fetch employees with search, filter, and pagination
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
@@ -153,6 +169,13 @@ export default function EmployeeTable() {
       setIsLoading(false);
     }
   }, [pagination.pageNumber, pagination.perPage, searchQuery, roleFilter]);
+
+
+  // Handle delete employee
+  const handleDeleteEmployee = async () => {
+
+  };
+
 
   // Handle page change
   const handlePageChange = useCallback((page: number) => {
@@ -348,9 +371,14 @@ export default function EmployeeTable() {
                             View details
                           </DropdownMenuItem>
                           <DropdownMenuItem>Edit employee</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            Delete employee
-                          </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                             setEmployeeToDelete(employee);
+                              setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <span>Delete</span>
+                        </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -366,6 +394,26 @@ export default function EmployeeTable() {
             </TableBody>
           </Table>
         </div>
+
+         {/* Delete Confirmation Dialog */}
+<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+  <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
+    <AlertDialogHeader>
+      <AlertDialogTitle className="text-black dark:text-white">Are you absolutely sure?</AlertDialogTitle>
+      <AlertDialogDescription className="text-black dark:text-white">
+        This action cannot be undone. This will permanently delete the
+        employee{" "}
+        <strong className="text-red-600">{`${employeeToDelete?.firstName} ${employeeToDelete?.lastName}`}</strong>.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
+      <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={handleDeleteEmployee}>
+        Delete
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
         {/* Footer with Pagination */}
         <div className="flex justify-between items-center space-x-2 py-6">
@@ -427,3 +475,6 @@ export default function EmployeeTable() {
     </Card>
   );
 }
+
+
+
