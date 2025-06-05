@@ -81,23 +81,18 @@ const sidebarData = {
         },
       ],
     },
-    {
-      title: "Announcements",
-      url: "/announcements",
-      icon: <Megaphone size={20} />,
-      items: [
-        {
-          title: "Create new post",
-          url: "/announcements/create-post",
-          icon: <img src="/asset/anouncementAdd.png" alt="Icon" width={16} height={16} />,
-        },
-        {
-          title: "Display all post",
-          url: "/announcements/display-post",
-          icon: <img src="/asset/announceShow.png" alt="Icon" width={16} height={16} />,
-        },
-      ],
-    }
+    // {
+    //   title: "Announcements",
+    //   url: "/announcements",
+    //   icon: <Megaphone size={20} />,
+    //   items: [
+    //     {
+    //       title: "Display all post",
+    //       url: "/announcements/display-post",
+    //       icon: <img src="/asset/announceShow.png" alt="Icon" width={16} height={16} />,
+    //     },
+    //   ],
+    // }
   ],
 };
 
@@ -200,6 +195,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           >
             <MessageCircleCode size={18} />
             <span>AI Assistant</span>
+          </Link>
+        </SidebarGroup>
+        <SidebarGroup>
+          <Link
+            href="/announcements"
+            className="text-sm px-2 py-2 flex items-center gap-2 dark:bg-[#191919] dark:hover:bg-gray-800"
+          >
+            <Megaphone size={20}  />
+            <span>Announcements</span>
           </Link>
         </SidebarGroup>
       </SidebarContent>
