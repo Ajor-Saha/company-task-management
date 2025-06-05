@@ -10,10 +10,10 @@ export function middleware(request: NextRequest) {
   }
 
   // List of paths that do not require authentication
-  const publicPaths = ["/home", "/sign-in", "/signup/:companyId", "/verify/:email", "/create-new-company"];
+  const publicPaths = ["/home", "/sign-in", "/signup", "/verify/:email", "/create-new-company"];
 
   // Auth-only paths (logged in users shouldn't access these)
-  const authOnlyPaths = ["/sign-in", "/signup", "/create-new-company"];
+  const authOnlyPaths = ["/sign-in", "/create-new-company"];
 
   // Allow API authentication endpoints without session validation
   const apiAuthPaths = ["/api/auth/", "/api/auth/**"];
@@ -22,9 +22,17 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("accessToken")?.value || "";
   const isAuthenticated = !!token;
 
+  // Check if the current path matches any of our public paths, including dynamic routes
+  const isPublicPath = publicPaths.some((path) => {
+    // Handle dynamic routes by replacing :param with a wildcard pattern
+    const pathPattern = path.replace(/:[\w]+/g, '[^/]+');
+    const regex = new RegExp(`^${pathPattern}(?:/.*)?$`);
+    return regex.test(pathname);
+  });
+
   // For public paths or API auth paths, allow access without token validation
   if (
-    publicPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`)) ||
+    isPublicPath ||
     apiAuthPaths.some((path) => pathname.startsWith(path.replace("**", "")))
   ) {
     // If user is authenticated and trying to access auth-only pages, redirect to home

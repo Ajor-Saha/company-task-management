@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { assignEmployeeToProject, createProject, deleteProject, getCompanyProjects, getProjectDetails, getProjectStats, removeEmployeeFromProject, updateProject, updateProjectDescription, updateProjectStatus } from '../controllers/project-controllers';
+import { assignEmployeeToProject, createProject, deleteProject, getCompanyProjects, getProjectDetails, getProjectStats, getUserTasksByProject, removeEmployeeFromProject, updateProject, updateProjectDescription, updateProjectStatus } from '../controllers/project-controllers';
 import { verifyJWT } from '../middleware/auth-middleware';
 
 const project_router = Router();
@@ -15,5 +15,6 @@ project_router.route('/update-project-status/:projectId').patch(verifyJWT, updat
 project_router.route('/remove-employee-project').delete(verifyJWT, removeEmployeeFromProject); // Assuming the same controller is used for removing an employee
 project_router.route('/update-project-description/:projectId').put(verifyJWT, updateProjectDescription); // Assuming the same controller is used for updating the project description
 project_router.route('/get-project-stats/:projectId').get(verifyJWT, getProjectStats); // Assuming the same controller is used for getting project stats
+project_router.route('/get-user-task-counts').get(verifyJWT, getUserTasksByProject);
 
 export default project_router; 

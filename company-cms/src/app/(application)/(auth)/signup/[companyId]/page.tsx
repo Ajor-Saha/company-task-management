@@ -63,7 +63,7 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg p-8">
+      <div className="w-full max-w-4xl shadow-lg rounded-lg p-8">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Left Section */}
           <div className="flex flex-col justify-between">

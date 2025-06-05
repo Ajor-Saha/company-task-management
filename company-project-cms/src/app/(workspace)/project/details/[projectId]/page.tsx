@@ -36,6 +36,8 @@ import { DatePickerComp } from "../../_components/date-picker";
 import ChatWidget from "../../_components/ChatWidget";
 import SubtasksTable from "../../_components/TaskList";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import useAuthStore from "@/store/store";
+import ProgressTracker from "../../_components/ProgressTracker";
 
 // Define the type for the RichTextEditor ref
 type RichTextEditorHandle = {
@@ -86,7 +88,7 @@ const ProjectDetails = () => {
   const [isUpdatingDates, setIsUpdatingDates] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-
+  const { user } = useAuthStore();
   const editorRef = useRef<RichTextEditorHandle>(null);
 
   const fetchProjectDetails = useCallback(async () => {
@@ -365,6 +367,17 @@ const ProjectDetails = () => {
                   isLoading={isUpdatingDates}
                 />
               </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              {(user?.role === "admin" || user?.role === "senior_employee") && (
+                <>
+                  <h3 className="text-lg font-medium mb-4">Project Progress</h3>
+                  <ProgressTracker projectId={project.id} />
+                </>
+              )}
             </div>
 
             <Separator />

@@ -12,48 +12,78 @@ import useAuthStore from "@/store/store";
 
 import { Task } from "@/types/task";
 
+interface TaskCountData {
+  projectTasks: {
+    projectName: string;
+    taskCount: number;
+  }[];
+  otherTasks: number;
+}
+
 const UserTask = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
+  const [taskCountData, setTaskCountData] = useState<TaskCountData | null>(null);
+  const [taskCountLoading, setTaskCountLoading] = useState(false);
   const { user } = useAuthStore();
 
+  const fetchTaskCounts = useCallback(async () => {
+    setTaskCountLoading(true);
+    try {
+      const response = await Axios.get(
+        `${env.BACKEND_BASE_URL}/api/project/get-user-task-counts`
+      );
+      if (response.data?.success) {
+        setTaskCountData(response.data.data);
+      } else {
+        console.error('API Error:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Fetch Task Counts Error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', error.response?.data);
+      }
+    } finally {
+      setTaskCountLoading(false);
+    }
+  }, []);
+
   const fetchAssignedTasks = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const response = await Axios.get(
         `${env.BACKEND_BASE_URL}/api/task/get-assigned-tasks`
-      )
+      );
       if (response.data?.success) {
-        setTasks(response.data.data)
+        setTasks(response.data.data);
       } else {
-        console.error('API Error:', response.data.message)
+        console.error('API Error:', response.data.message);
       }
     } catch (error) {
-      console.error('Fetch Assigned Tasks Error:', error)
+      console.error('Fetch Assigned Tasks Error:', error);
       if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', error.response?.data)
+        console.error('Axios Error Details:', error.response?.data);
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    fetchAssignedTasks()
+    fetchAssignedTasks();
+    fetchTaskCounts();
 
     // Add event listener for task updates
     const handleTaskUpdate = () => {
-      fetchAssignedTasks()
-    }
-    window.addEventListener('task-updated', handleTaskUpdate)
+      fetchAssignedTasks();
+      fetchTaskCounts();
+    };
+    window.addEventListener('task-updated', handleTaskUpdate);
 
     return () => {
-      window.removeEventListener('task-updated', handleTaskUpdate)
-    }
-  }, [fetchAssignedTasks])
-
-  
-
+      window.removeEventListener('task-updated', handleTaskUpdate);
+    };
+  }, [fetchAssignedTasks, fetchTaskCounts]);
 
   return (
     <div className="p-6">
@@ -88,9 +118,11 @@ const UserTask = () => {
         />
 
         {/* Pie Chart */}
-        <HomePieChart  />
-        {/*Bar Chart */}
-        <AppBarChart  />
+        <HomePieChart 
+          data={taskCountData} 
+          loading={taskCountLoading} 
+        />
+        
       </div>
     </div>
   );
