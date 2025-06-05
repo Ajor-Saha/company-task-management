@@ -24,6 +24,7 @@
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-toast": "^1.2.14",
     "@radix-ui/react-tooltip": "^1.1.8",
     "@shadcn/ui": "^0.0.4",
     "ai": "^4.3.15",
