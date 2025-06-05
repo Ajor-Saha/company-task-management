@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "./db";
 import { messageTable } from "./db/schema";
 import chat_router from "./routes/chat-route";
+import bot_router from "./routes/bot-route";
 
 
 dotenv.config();
@@ -47,6 +48,7 @@ app.use("/api/project", project_router);
 app.use("/api/employee", employee_router);
 app.use("/api/task", task_router);
 app.use("/api/message", chat_router);
+app.use("/api/ai-support", bot_router);
 
 app.get("/", (req, res) => {
   res.send("Company & task server is running");

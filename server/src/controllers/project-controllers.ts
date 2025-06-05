@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ApiResponse } from "../utils/api-response";
 import { db } from "../db";
 import { projectTable } from "../db/schema/tbl-project";
-import { and, eq, count } from "drizzle-orm";
+import { and, eq, count, sql, isNotNull, isNull } from "drizzle-orm";
 import { projectAssignmentsTable, userTable, taskTable } from "../db/schema";
 
 export const createProject = asyncHandler(
@@ -842,3 +842,77 @@ export const updateProjectDescription = asyncHandler(
     }
   }
 );
+
+export const getUserTasksByProject = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.userId;
+      const companyId = req.user?.companyId;
+
+      if (!userId || !companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
+      }
+
+      // First get tasks with projects
+      const tasksWithProjects = await db
+        .select({
+          projectId: taskTable.projectId,
+          projectName: projectTable.name,
+          taskCount: sql<number>`count(${taskTable.id})::int`,
+        })
+        .from(taskTable)
+        .leftJoin(
+          projectTable,
+          eq(taskTable.projectId, projectTable.id)
+        )
+        .where(
+          and(
+            eq(taskTable.assignedTo, userId),
+            eq(projectTable.companyId, companyId),
+            isNotNull(taskTable.projectId)
+          )
+        )
+        .groupBy(taskTable.projectId, projectTable.name);
+
+      // Get count of tasks without projects
+      const [tasksWithoutProject] = await db
+        .select({
+          taskCount: sql<number>`count(${taskTable.id})::int`,
+        })
+        .from(taskTable)
+        .where(
+          and(
+            eq(taskTable.assignedTo, userId),
+            isNull(taskTable.projectId)
+          )
+        );
+
+      // Combine the results
+      const result = {
+        projectTasks: tasksWithProjects.map(task => ({
+          projectName: task.projectName,
+          taskCount: task.taskCount
+        })),
+        otherTasks: tasksWithoutProject?.taskCount || 0
+      };
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            result,
+            "User task counts by project fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Error fetching user task counts by project:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+

@@ -52,15 +52,15 @@ const OTPVerification = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-gray-800">Verify Your Account</h2>
-        <p className="text-center text-gray-600 mb-4">Enter the 6-digit code sent to your email</p>
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="shadow-md rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center">Verify Your Account</h2>
+        <p className="text-center mb-4">Enter the 6-digit code sent to your email</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* OTP Input */}
           <div>
-            <label htmlFor="otp" className="block text-gray-700 font-medium mb-1">
+            <label htmlFor="otp" className="block font-medium mb-1">
               Enter OTP
             </label>
             <input

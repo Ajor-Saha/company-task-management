@@ -8,6 +8,20 @@
       "when": 1748942113448,
       "tag": "0000_goofy_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1749059162917,
+      "tag": "0001_medical_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749063117419,
+      "tag": "0002_brown_callisto",
+      "breakpoints": true
     }
   ]
 }
