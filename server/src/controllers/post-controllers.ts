@@ -195,5 +195,194 @@ export const getCompanyPosts = asyncHandler(
   }
 );
 
+export const editPost = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const companyId = req.user?.companyId;
+      const postId = req.params.postId;
+      const { title, content } = req.body;
 
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+      }
+
+      // Find the existing post
+      const [existingPost] = await db
+        .select()
+        .from(postTable)
+        .where(
+          and(
+            eq(postTable.id, postId),
+            eq(postTable.companyId, companyId)
+          )
+        );
+
+      if (!existingPost) {
+        return res
+          .status(404)
+          .json(new ApiResponse(404, {}, "Post not found"));
+      }
+
+      // Verify user has permission (post creator or admin)
+      if (existingPost.userId !== req.user?.userId) {
+        return res
+          .status(403)
+          .json(new ApiResponse(403, {}, "Not authorized to edit this post"));
+      }
+
+      let uploadedFiles: PostFile[] = existingPost.files || [];
+
+      // Process new files if they exist
+      let files = req.files;
+      if (files) {
+        if (!Array.isArray(files)) {
+          files = [files];
+        }
+
+        if (files.length > 0) {
+          const r2 = createR2Client();
+
+          for (const file of files) {
+            if (!file || !file.filepath) continue;
+
+            try {
+              const buffer = await fs.readFile(file.filepath);
+              const fileId = nanoid();
+              const uniqueFileName = `${fileId}-${encodeURIComponent(
+                file.originalFilename || "unnamed"
+              )}`;
+
+              await r2.send(
+                new PutObjectCommand({
+                  Bucket: process.env.BUCKET_NAME!,
+                  Key: uniqueFileName,
+                  Body: buffer,
+                  ContentType: file.mimetype || "application/octet-stream",
+                })
+              );
+
+              await fs.unlink(file.filepath);
+
+              const fileUrl = `${process.env.PUBLIC_ACCESS_URL}/${uniqueFileName}`;
+
+              uploadedFiles.push({
+                id: fileId,
+                url: fileUrl,
+              });
+            } catch (fileError) {
+              console.error(
+                `Error processing file ${file.originalFilename}:`,
+                fileError
+              );
+              try {
+                await fs.unlink(file.filepath);
+              } catch (unlinkError) {
+                console.error("Error cleaning up temporary file:", unlinkError);
+              }
+            }
+          }
+        }
+      }
+
+      // Update the post
+      const [updatedPost] = await db
+        .update(postTable)
+        .set({
+          title: title || existingPost.title,
+          content: content || existingPost.content,
+          files: uploadedFiles,
+          updatedAt: new Date(),
+        })
+        .where(eq(postTable.id, postId))
+        .returning();
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, updatedPost, "Post updated successfully"));
+
+    } catch (error) {
+      console.error("Error updating post:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+
+export const deletePost = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const companyId = req.user?.companyId;
+      const postId = req.params.postId;
+
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+      }
+
+      // Find the post to delete
+      const [existingPost] = await db
+        .select()
+        .from(postTable)
+        .where(
+          and(
+            eq(postTable.id, postId),
+            eq(postTable.companyId, companyId)
+          )
+        );
+
+      if (!existingPost) {
+        return res
+          .status(404)
+          .json(new ApiResponse(404, {}, "Post not found"));
+      }
+
+      // Verify user has permission (post creator or admin)
+      if (existingPost.userId !== req.user?.userId) {
+        return res
+          .status(403)
+          .json(new ApiResponse(403, {}, "Not authorized to delete this post"));
+      }
+
+      // Delete associated files from R2
+      if (existingPost.files && existingPost.files.length > 0) {
+        const r2 = createR2Client();
+
+        for (const file of existingPost.files) {
+          try {
+            const fileName = file.url.split('/').pop();
+            if (fileName) {
+              await r2.send(
+                new DeleteObjectCommand({
+                  Bucket: process.env.BUCKET_NAME!,
+                  Key: fileName,
+                })
+              );
+            }
+          } catch (error) {
+            console.error(`Error deleting file from R2: ${file.url}`, error);
+          }
+        }
+      }
+
+      // Delete the post
+      await db
+        .delete(postTable)
+        .where(eq(postTable.id, postId));
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Post deleted successfully"));
+
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
 
