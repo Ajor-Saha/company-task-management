@@ -126,28 +126,28 @@ export function ChartLineDots() {
       <CardContent>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+          <LineChart
               data={formattedChartData}
-              margin={{
+            margin={{
                 top: 5,
                 right: 10,
                 left: 10,
                 bottom: 5,
-              }}
-            >
+            }}
+          >
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 vertical={false}
                 stroke="var(--border)"
               />
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
+            <XAxis
+              dataKey="month"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
                 tickFormatter={(value) => value.split(' ')[0].slice(0, 3)}
                 stroke="var(--muted-foreground)"
-              />
+            />
               <YAxis
                 tickLine={false}
                 axisLine={false}
@@ -156,22 +156,22 @@ export function ChartLineDots() {
                 stroke="var(--muted-foreground)"
               />
               <Tooltip content={<CustomTooltip />} />
-              <Line
+            <Line
                 type="monotone"
                 dataKey="amount"
                 stroke="var(--primary)"
-                strokeWidth={2}
-                dot={{
+              strokeWidth={2}
+              dot={{
                   fill: "var(--primary)",
                   strokeWidth: 2,
-                }}
-                activeDot={{
-                  r: 6,
+              }}
+              activeDot={{
+                r: 6,
                   stroke: "var(--primary)",
                   strokeWidth: 2,
-                }}
-              />
-            </LineChart>
+              }}
+            />
+          </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
