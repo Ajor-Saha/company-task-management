@@ -298,10 +298,10 @@ export default function ManageProject() {
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-black dark:text-white">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription className="text-black dark:text-white">
               This action cannot be undone. This will permanently delete the
               project
               <strong className="text-red-600"> {projectToDelete?.name}</strong>
@@ -309,8 +309,8 @@ export default function ManageProject() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteProject}>
+            <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={handleDeleteProject}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
