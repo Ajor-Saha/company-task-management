@@ -225,7 +225,7 @@ export function HomePieChart() {
         <div className="h-[280px] w-full">
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <PieChart>
                 <Tooltip content={<CustomTooltip className="dark:bg-gray-900 bg-gray-200" />} />
                 <Pie
                   data={pieData}
@@ -244,10 +244,10 @@ export function HomePieChart() {
                     <Cell 
                       key={`cell-${index}`} 
                       fill={COLORS[entry.type as keyof typeof COLORS]} 
-                    />
+            />
                   ))}
                 </Pie>
-              </PieChart>
+          </PieChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex h-full items-center justify-center">

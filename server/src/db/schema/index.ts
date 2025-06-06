@@ -5,3 +5,4 @@ export * from "./tbl-task";
 export * from "./tbl-project-assignments";
 export * from "./tbl-message";
 export * from "./tbl-bot-message";
+export * from "./tbl-post";

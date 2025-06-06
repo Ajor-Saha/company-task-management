@@ -22,6 +22,13 @@
       "when": 1749063117419,
       "tag": "0002_brown_callisto",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1749230413643,
+      "tag": "0003_sticky_mimic",
+      "breakpoints": true
     }
   ]
 }
