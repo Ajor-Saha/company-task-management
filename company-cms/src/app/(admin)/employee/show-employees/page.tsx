@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Loader2, Delete } from "lucide-react";
+import { MoreHorizontal, Loader2,Delete } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -34,12 +34,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
-  PaginationEllipsis,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,11 +52,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import { ColorRing } from "react-loader-spinner";
 
-// Types (unchanged)
+// Types
 interface Employee {
   userId: string;
   firstName: string;
@@ -80,7 +82,7 @@ interface EmployeeResponse {
   };
 }
 
-// Helper functions (unchanged)
+// Helper functions
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
@@ -110,7 +112,7 @@ function formatRoleName(role: string) {
 }
 
 export default function EmployeeTable() {
-  // Existing state (unchanged)
+  // State for employees data
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -121,10 +123,11 @@ export default function EmployeeTable() {
     total: 0,
     totalPages: 0,
   });
+
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // New state for edit dialog
+    // New state for edit dialog
   const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -135,44 +138,7 @@ export default function EmployeeTable() {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Existing fetchEmployees function (unchanged)
-  const fetchEmployees = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.append("pageNumber", pagination.pageNumber.toString());
-      params.append("perPage", pagination.perPage.toString());
-      if (searchQuery.trim()) {
-        params.append("search", searchQuery);
-      }
-      if (roleFilter && roleFilter !== "all") {
-        params.append("filter", roleFilter);
-      }
-      const response = await Axios.get<EmployeeResponse>(
-        `${
-          env.BACKEND_BASE_URL
-        }/api/employee/get-all-employee?${params.toString()}`
-      );
-      if (response.data.success) {
-        setEmployees(response.data.data.employees);
-        setPagination({
-          pageNumber: response.data.data.pageNumber,
-          perPage: response.data.data.perPage,
-          total: response.data.data.total,
-          totalPages: response.data.data.totalPages,
-        });
-      } else {
-        toast.error("Failed to fetch employees data");
-      }
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-      toast.error("An error occurred while fetching employees");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pagination.pageNumber, pagination.perPage, searchQuery, roleFilter]);
-
-// Replace the openEditDialog function with this
+  // Replace the openEditDialog function with this
 const openEditDialog = (employee: Employee) => {
   setEmployeeToEdit(employee);
   setEditForm({
@@ -184,7 +150,7 @@ const openEditDialog = (employee: Employee) => {
   setEditDialogOpen(true);
 };
 
-  // New handler for updating employee
+    // New handler for updating employee
   const handleUpdateEmployee = async () => {
     if (!employeeToEdit) return;
 
@@ -215,8 +181,8 @@ const openEditDialog = (employee: Employee) => {
       setIsUpdating(false);
     }
   };
-  
-  // Replace the handleEditFormChange function with this
+
+    // Replace the handleEditFormChange function with this
 const handleEditFormChange = (
   e: React.ChangeEvent<HTMLInputElement> | string,
   field: string
@@ -229,12 +195,58 @@ const handleEditFormChange = (
   }
 };
 
-  // Existing handleDeleteEmployee function (unchanged)
+  // Fetch employees with search, filter, and pagination
+  const fetchEmployees = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+
+      // Add pagination params
+      params.append("pageNumber", pagination.pageNumber.toString());
+      params.append("perPage", pagination.perPage.toString());
+
+      // Add search and filter if they exist
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery);
+      }
+
+      if (roleFilter && roleFilter !== "all") {
+        params.append("filter", roleFilter);
+      }
+
+      const response = await Axios.get<EmployeeResponse>(
+        `${
+          env.BACKEND_BASE_URL
+        }/api/employee/get-all-employee?${params.toString()}`
+      );
+
+      if (response.data.success) {
+        setEmployees(response.data.data.employees);
+        setPagination({
+          pageNumber: response.data.data.pageNumber,
+          perPage: response.data.data.perPage,
+          total: response.data.data.total,
+          totalPages: response.data.data.totalPages,
+        });
+      } else {
+        toast.error("Failed to fetch employees data");
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      toast.error("An error occurred while fetching employees");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [pagination.pageNumber, pagination.perPage, searchQuery, roleFilter]);
+
+
+  // Handle delete employee
   const handleDeleteEmployee = async () => {
-    // Implement your delete logic here
+
   };
 
-  // Existing handlePageChange function (unchanged)
+
+  // Handle page change
   const handlePageChange = useCallback((page: number) => {
     setPagination((prev) => ({
       ...prev,
@@ -242,41 +254,47 @@ const handleEditFormChange = (
     }));
   }, []);
 
-  // Existing handleSearchChange function (unchanged)
+  // Handle search input change with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setPagination((prev) => ({
       ...prev,
-      pageNumber: 1,
+      pageNumber: 1, // Reset to first page on new search
     }));
   };
 
-  // Existing handleRoleFilterChange function (unchanged)
+  // Handle role filter change
   const handleRoleFilterChange = (value: string) => {
     setRoleFilter(value);
     setPagination((prev) => ({
       ...prev,
-      pageNumber: 1,
+      pageNumber: 1, // Reset to first page on new filter
     }));
   };
 
-  // Existing useEffect for fetching employees (unchanged)
+  // Fetch employees on component mount and when search/filter/pagination changes
   useEffect(() => {
     const debounceFetch = setTimeout(() => {
       fetchEmployees();
     }, 300);
+
     return () => clearTimeout(debounceFetch);
   }, [fetchEmployees]);
 
-  // Existing renderPaginationItems function (unchanged)
+  // Generate pagination items
   const renderPaginationItems = () => {
     const items = [];
+
+    // Show max 5 page links
     const maxPages = Math.min(5, pagination.totalPages);
     let startPage = Math.max(1, pagination.pageNumber - 2);
     let endPage = Math.min(pagination.totalPages, startPage + maxPages - 1);
+
+    // Adjust startPage if endPage is maxed out
     if (endPage - startPage + 1 < maxPages) {
       startPage = Math.max(1, endPage - maxPages + 1);
     }
+
     for (let i = startPage; i <= endPage; i++) {
       items.push(
         <PaginationItem key={i}>
@@ -293,13 +311,14 @@ const handleEditFormChange = (
         </PaginationItem>
       );
     }
+
     return items;
   };
 
   return (
     <Card className="m-4">
       <CardContent className="pt-6">
-        {/* Search and Role Filter UI (unchanged) */}
+        {/* Search and Role Filter UI */}
         <div className="flex flex-col md:flex-row items-center justify-between py-4 gap-4">
           <div className="flex w-full md:w-auto items-center gap-2">
             <Input
@@ -316,7 +335,9 @@ const handleEditFormChange = (
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="senior_employee">Senior Employee</SelectItem>
-                <SelectItem value="assigned_employee">Assigned Employee</SelectItem>
+                <SelectItem value="assigned_employee">
+                  Assigned Employee
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -344,7 +365,13 @@ const handleEditFormChange = (
                         visible={true}
                         height="80"
                         width="80"
-                        colors={["#e15b64", "#f47e60", "#f8b26a", "#abbd81", "#849b87"]}
+                        colors={[
+                          "#e15b64",
+                          "#f47e60",
+                          "#f8b26a",
+                          "#abbd81",
+                          "#849b87",
+                        ]}
                         ariaLabel="color-ring-loading"
                         wrapperStyle={{}}
                         wrapperClass="color-ring-wrapper"
@@ -365,7 +392,9 @@ const handleEditFormChange = (
                           />
                           <AvatarFallback>
                             {employee.firstName.charAt(0)}
-                            {employee.lastName ? employee.lastName.charAt(0) : ""}
+                            {employee.lastName
+                              ? employee.lastName.charAt(0)
+                              : ""}
                           </AvatarFallback>
                         </Avatar>
                         <div className="font-medium">{`${employee.firstName} ${employee.lastName}`}</div>
@@ -378,7 +407,9 @@ const handleEditFormChange = (
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={employee.isVerified ? "success" : "outline"}>
+                      <Badge
+                        variant={employee.isVerified ? "success" : "outline"}
+                      >
                         {employee.isVerified ? "Verified" : "Pending"}
                       </Badge>
                     </TableCell>
@@ -393,7 +424,9 @@ const handleEditFormChange = (
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => navigator.clipboard.writeText(employee.userId)}
+                            onClick={() =>
+                              navigator.clipboard.writeText(employee.userId)
+                            }
                           >
                             Copy user ID
                           </DropdownMenuItem>
@@ -406,19 +439,17 @@ const handleEditFormChange = (
                           >
                             View details
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => openEditDialog(employee)}
-                          >
+                          <DropdownMenuItem onClick={() => openEditDialog(employee)}>
                             Edit employee
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEmployeeToDelete(employee);
+                        <DropdownMenuItem
+                          onClick={() => {
+                             setEmployeeToDelete(employee);
                               setDeleteDialogOpen(true);
-                            }}
-                          >
-                            Delete
-                          </DropdownMenuItem>
+                          }}
+                        >
+                          <span>Delete</span>
+                        </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -521,39 +552,33 @@ const handleEditFormChange = (
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Delete Confirmation Dialog (unchanged) */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-black dark:text-white">
-                Are you absolutely sure?
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-black dark:text-white">
-                This action cannot be undone. This will permanently delete the
-                employee{" "}
-                <strong className="text-red-600">{`${employeeToDelete?.firstName} ${employeeToDelete?.lastName}`}</strong>.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-red-600 text-white hover:bg-red-700"
-                onClick={handleDeleteEmployee}
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+         {/* Delete Confirmation Dialog */}
+<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+  <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
+    <AlertDialogHeader>
+      <AlertDialogTitle className="text-black dark:text-white">Are you absolutely sure?</AlertDialogTitle>
+      <AlertDialogDescription className="text-black dark:text-white">
+        This action cannot be undone. This will permanently delete the
+        employee{" "}
+        <strong className="text-red-600">{`${employeeToDelete?.firstName} ${employeeToDelete?.lastName}`}</strong>.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
+      <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={handleDeleteEmployee}>
+        Delete
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
-        {/* Footer with Pagination (unchanged) */}
+        {/* Footer with Pagination */}
         <div className="flex justify-between items-center space-x-2 py-6">
           <div className="text-sm text-muted-foreground">
             Showing <span className="font-medium">{employees.length}</span> of{" "}
             <span className="font-medium">{pagination.total}</span> employees
           </div>
+
           {pagination.totalPages > 1 && (
             <Pagination>
               <PaginationContent>
@@ -573,13 +598,16 @@ const handleEditFormChange = (
                     }
                   />
                 </PaginationItem>
+
                 {renderPaginationItems()}
+
                 {pagination.totalPages > 5 &&
                   pagination.pageNumber + 2 < pagination.totalPages && (
                     <PaginationItem>
                       <PaginationEllipsis />
                     </PaginationItem>
                   )}
+
                 <PaginationItem>
                   <PaginationNext
                     href="#"
@@ -604,4 +632,5 @@ const handleEditFormChange = (
     </Card>
   );
 }
+
 
