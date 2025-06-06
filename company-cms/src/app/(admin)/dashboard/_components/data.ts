@@ -82,7 +82,7 @@ export const dashboardMetrics = [
     change: 12,
     changeValue: "+3",
     changeLabel: "this week",
-    trend: "up",
+    trend: "up" as const,
     icon: "🛠️",
   },
   {
@@ -91,7 +91,7 @@ export const dashboardMetrics = [
     change: 5,
     changeValue: "+3",
     changeLabel: "this month",
-    trend: "up",
+    trend: "up" as const,
     icon: "👨",
   },
   {
@@ -100,7 +100,7 @@ export const dashboardMetrics = [
     change: -1.2,
     changeValue: "-150",
     changeLabel: "this week",
-    trend: "down",
+    trend: "down" as const,
     icon: "💰",
   },
   {
@@ -109,7 +109,7 @@ export const dashboardMetrics = [
     change: 14.4,
     changeValue: "+0.5k",
     changeLabel: "today",
-    trend: "up",
+    trend: "up" as const,
     icon: "💵",
   },
 ];

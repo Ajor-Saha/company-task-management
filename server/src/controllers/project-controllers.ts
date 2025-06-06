@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ApiResponse } from "../utils/api-response";
 import { db } from "../db";
 import { projectTable } from "../db/schema/tbl-project";
-import { and, eq, count, sql, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, count, sql, isNotNull, isNull, inArray } from "drizzle-orm";
 import { projectAssignmentsTable, userTable, taskTable } from "../db/schema";
 
 export const createProject = asyncHandler(
@@ -915,4 +915,208 @@ export const getUserTasksByProject = asyncHandler(
     }
   }
 );
+
+export const getProjectChartData = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { timeframe } = req.params;
+      const companyId = req.user?.companyId;
+
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+      }
+
+      // Validate timeframe parameter
+      const validTimeframes = ["3months", "6months", "1year"];
+      if (!timeframe || !validTimeframes.includes(timeframe)) {
+        return res
+          .status(400)
+          .json(
+            new ApiResponse(
+              400,
+              {},
+              "Invalid timeframe. Valid options: 3months, 6months, 1year"
+            )
+          );
+      }
+
+      // Calculate date range based on timeframe
+      const endDate = new Date();
+      const startDate = new Date();
+      
+      switch (timeframe) {
+        case "3months":
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case "6months":
+          startDate.setMonth(startDate.getMonth() - 6);
+          break;
+        case "1year":
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+      }
+
+      // Set time to start of day for startDate and end of day for endDate
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+
+      // Get all projects within the date range for the company
+      const projects = await db
+        .select({
+          id: projectTable.id,
+          status: projectTable.status,
+          startDate: projectTable.startDate,
+        })
+        .from(projectTable)
+        .where(
+          and(
+            eq(projectTable.companyId, companyId),
+            sql`${projectTable.startDate} >= ${startDate}`,
+            sql`${projectTable.startDate} <= ${endDate}`
+          )
+        );
+
+      // Create a map to store daily counts
+      const dailyData = new Map<string, { total: number; completed: number }>();
+
+      // Initialize all dates in the range with zero counts
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        dailyData.set(dateStr, { total: 0, completed: 0 });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Count projects by date
+      projects.forEach(project => {
+        if (project.startDate) {
+          const dateStr = project.startDate.toISOString().split('T')[0];
+          const existing = dailyData.get(dateStr) || { total: 0, completed: 0 };
+          
+          existing.total += 1;
+          if (project.status === "completed") {
+            existing.completed += 1;
+          }
+          
+          dailyData.set(dateStr, existing);
+        }
+      });
+
+      // Convert map to array format similar to the reference chartData
+      const chartData = Array.from(dailyData.entries())
+        .map(([date, counts]) => ({
+          date,
+          totalProjects: counts.total,
+          completedProjects: counts.completed,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            {
+              timeframe,
+              startDate: startDate.toISOString().split('T')[0],
+              endDate: endDate.toISOString().split('T')[0],
+              chartData,
+            },
+            "Project chart data fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Error fetching project chart data:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+
+export const getRecentProjects = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const companyId = req.user?.companyId;
+
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+      }
+
+      // First get the 5 most recent projects
+      const projects = await db
+        .select({
+          id: projectTable.id,
+          name: projectTable.name,
+          status: projectTable.status,
+          startDate: projectTable.startDate,
+        })
+        .from(projectTable)
+        .where(eq(projectTable.companyId, companyId))
+        .orderBy(sql`${projectTable.startDate} DESC NULLS LAST`)
+        .limit(5);
+
+      // Get assigned employees count for each project
+      const projectIds = projects.map(project => project.id);
+      
+      const employeeCounts = await db
+        .select({
+          projectId: projectAssignmentsTable.projectId,
+          employeeCount: sql<number>`count(${projectAssignmentsTable.userId})::int`,
+        })
+        .from(projectAssignmentsTable)
+        .where(inArray(projectAssignmentsTable.projectId, projectIds))
+        .groupBy(projectAssignmentsTable.projectId);
+
+      // Get task counts for each project
+      const taskCounts = await db
+        .select({
+          projectId: taskTable.projectId,
+          taskCount: sql<number>`count(${taskTable.id})::int`,
+        })
+        .from(taskTable)
+        .where(inArray(taskTable.projectId, projectIds))
+        .groupBy(taskTable.projectId);
+
+      // Create a map for quick lookup
+      const employeeCountMap = new Map(
+        employeeCounts.map(({ projectId, employeeCount }) => [projectId, employeeCount])
+      );
+      
+      const taskCountMap = new Map(
+        taskCounts.map(({ projectId, taskCount }) => [projectId, taskCount])
+      );
+
+      // Combine all the data
+      const projectsWithCounts = projects.map(project => ({
+        id: project.id,
+        name: project.name,
+        status: project.status,
+        assignedEmployees: employeeCountMap.get(project.id) || 0,
+        totalTasks: taskCountMap.get(project.id) || 0,
+        startDate: project.startDate,
+      }));
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            projectsWithCounts,
+            "Recent projects fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Error fetching recent projects:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+
 
