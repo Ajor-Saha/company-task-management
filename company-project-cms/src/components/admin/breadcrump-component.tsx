@@ -21,8 +21,6 @@ const breadcrumbMap: Record<string, string> = {
   "/settings/company-manage": "Settings > Company Manage",
   "/employee/add-employee": "Employee > Add Employee",
   "/employee/show-employees": "Employee > Show Employees",
-  "/announcements/create-post": "Announcements > Create Post",
-  "/announcements/display-post": "Announcements > Display Post",
 };
 export function BreadcrumbComponent() {
   const pathname = usePathname();

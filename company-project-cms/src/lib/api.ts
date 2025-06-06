@@ -9,8 +9,7 @@ const mockAnnouncements: Announcement[] = [
     title: "System Maintenance Scheduled",
     content:
       "We will be performing scheduled maintenance on our servers this weekend from 2:00 AM to 6:00 AM EST. During this time, some services may be temporarily unavailable. We apologize for any inconvenience.",
-    priority: "high",
-    category: "Maintenance",
+
     author: "IT Team",
     createdAt: new Date("2024-01-15T10:30:00"),
     isActive: true,
@@ -20,8 +19,6 @@ const mockAnnouncements: Announcement[] = [
     title: "New Feature Release: Dark Mode",
     content:
       "We're excited to announce the release of dark mode! You can now toggle between light and dark themes in your user settings. This feature has been highly requested and we're happy to deliver it.",
-    priority: "medium",
-    category: "Updates",
     author: "Product Team",
     createdAt: new Date("2024-01-14T14:15:00"),
     isActive: true,
@@ -31,8 +28,6 @@ const mockAnnouncements: Announcement[] = [
     title: "Holiday Office Hours",
     content:
       "Please note that our office will have modified hours during the holiday season. We will be closed on December 25th and January 1st. Regular hours will resume on January 2nd.",
-    priority: "low",
-    category: "General",
     author: "HR Department",
     createdAt: new Date("2024-01-10T09:00:00"),
     isActive: true,
@@ -42,8 +37,7 @@ const mockAnnouncements: Announcement[] = [
     title: "Security Update Required",
     content:
       "All users must update their passwords by the end of this week. Please ensure your new password meets our security requirements: at least 12 characters with a mix of letters, numbers, and symbols.",
-    priority: "urgent",
-    category: "Security",
+
     author: "Security Team",
     createdAt: new Date("2024-01-12T16:45:00"),
     isActive: true,
@@ -53,8 +47,7 @@ const mockAnnouncements: Announcement[] = [
     title: "Team Building Event",
     content:
       "Join us for our quarterly team building event next Friday at 3 PM in the main conference room. We'll have games, refreshments, and prizes. RSVP by Wednesday.",
-    priority: "low",
-    category: "Events",
+
     author: "HR Department",
     createdAt: new Date("2024-01-08T11:20:00"),
     isActive: true,
@@ -89,6 +82,69 @@ class AnnouncementAPI {
       }
     }
   }
+
+
+async updateAnnouncement(id: string, data: Partial<Announcement>): Promise<ApiResponse<Announcement>> {
+  if (this.useMockData) {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Find the announcement in mock data and update it
+    const index = mockAnnouncements.findIndex((a) => a.id === id);
+    if (index === -1) {
+      return { success: false, error: "Announcement not found" };
+    }
+
+    // Merge the updates
+    const updatedAnnouncement = {
+      ...mockAnnouncements[index],
+      ...data,
+      createdAt: mockAnnouncements[index].createdAt, // keep original createdAt
+    };
+
+    // Update mock array
+    mockAnnouncements[index] = updatedAnnouncement;
+
+    return {
+      success: true,
+      data: updatedAnnouncement,
+    };
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/${id}`, {
+      method: "PUT", // or PATCH if partial update API
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      data: {
+        ...result,
+        createdAt: new Date(result.createdAt),
+      },
+    };
+  } catch (error) {
+    console.error("Failed to update announcement:", error);
+    return {
+      success: false,
+      error: "Failed to update announcement",
+    };
+  }
+}
+
+
+
+
+
 
   async createAnnouncement(data: CreateAnnouncementData): Promise<ApiResponse<Announcement>> {
     if (this.useMockData) {
