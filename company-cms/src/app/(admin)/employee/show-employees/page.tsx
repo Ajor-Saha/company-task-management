@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Loader2,Delete } from "lucide-react";
+import { MoreHorizontal, Loader2, Delete } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -34,13 +34,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
+  PaginationEllipsis,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,12 +51,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import { ColorRing } from "react-loader-spinner";
 
-// Types
+// Types (unchanged)
 interface Employee {
   userId: string;
   firstName: string;
@@ -67,6 +65,7 @@ interface Employee {
   isVerified: boolean;
   createdAt: string;
   avatar?: string;
+  salary?: number;
 }
 
 interface EmployeeResponse {
@@ -81,7 +80,7 @@ interface EmployeeResponse {
   };
 }
 
-// Helper functions
+// Helper functions (unchanged)
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
@@ -111,7 +110,7 @@ function formatRoleName(role: string) {
 }
 
 export default function EmployeeTable() {
-  // State for employees data
+  // Existing state (unchanged)
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -122,35 +121,38 @@ export default function EmployeeTable() {
     total: 0,
     totalPages: 0,
   });
-
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // Fetch employees with search, filter, and pagination
+  // New state for edit dialog
+  const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    role: "",
+    salary: 0,
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Existing fetchEmployees function (unchanged)
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-
-      // Add pagination params
       params.append("pageNumber", pagination.pageNumber.toString());
       params.append("perPage", pagination.perPage.toString());
-
-      // Add search and filter if they exist
       if (searchQuery.trim()) {
         params.append("search", searchQuery);
       }
-
       if (roleFilter && roleFilter !== "all") {
         params.append("filter", roleFilter);
       }
-
       const response = await Axios.get<EmployeeResponse>(
         `${
           env.BACKEND_BASE_URL
         }/api/employee/get-all-employee?${params.toString()}`
       );
-
       if (response.data.success) {
         setEmployees(response.data.data.employees);
         setPagination({
@@ -170,14 +172,69 @@ export default function EmployeeTable() {
     }
   }, [pagination.pageNumber, pagination.perPage, searchQuery, roleFilter]);
 
+// Replace the openEditDialog function with this
+const openEditDialog = (employee: Employee) => {
+  setEmployeeToEdit(employee);
+  setEditForm({
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+    role: employee.role,
+    salary: employee.salary ?? 0, // Use existing salary or default to 0
+  });
+  setEditDialogOpen(true);
+};
 
-  // Handle delete employee
+  // New handler for updating employee
+  const handleUpdateEmployee = async () => {
+    if (!employeeToEdit) return;
+
+    setIsUpdating(true);
+    try {
+      // Replace with your actual API endpoint for updating employee
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/employee/update/${employeeToEdit.userId}`,
+        {
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          role: editForm.role,
+          salary: editForm.salary, // Include salary in the payload
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Employee updated successfully");
+        setEditDialogOpen(false);
+        fetchEmployees(); // Refresh the employee list
+      } else {
+        toast.error("Failed to update employee");
+      }
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      toast.error("An error occurred while updating the employee");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+  
+  // Replace the handleEditFormChange function with this
+const handleEditFormChange = (
+  e: React.ChangeEvent<HTMLInputElement> | string,
+  field: string
+) => {
+  if (typeof e === "string") {
+    setEditForm((prev) => ({ ...prev, [field]: e }));
+  } else {
+    const value = field === "salary" ? Number(e.target.value) : e.target.value;
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  }
+};
+
+  // Existing handleDeleteEmployee function (unchanged)
   const handleDeleteEmployee = async () => {
-
+    // Implement your delete logic here
   };
 
-
-  // Handle page change
+  // Existing handlePageChange function (unchanged)
   const handlePageChange = useCallback((page: number) => {
     setPagination((prev) => ({
       ...prev,
@@ -185,47 +242,41 @@ export default function EmployeeTable() {
     }));
   }, []);
 
-  // Handle search input change with debounce
+  // Existing handleSearchChange function (unchanged)
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setPagination((prev) => ({
       ...prev,
-      pageNumber: 1, // Reset to first page on new search
+      pageNumber: 1,
     }));
   };
 
-  // Handle role filter change
+  // Existing handleRoleFilterChange function (unchanged)
   const handleRoleFilterChange = (value: string) => {
     setRoleFilter(value);
     setPagination((prev) => ({
       ...prev,
-      pageNumber: 1, // Reset to first page on new filter
+      pageNumber: 1,
     }));
   };
 
-  // Fetch employees on component mount and when search/filter/pagination changes
+  // Existing useEffect for fetching employees (unchanged)
   useEffect(() => {
     const debounceFetch = setTimeout(() => {
       fetchEmployees();
     }, 300);
-
     return () => clearTimeout(debounceFetch);
   }, [fetchEmployees]);
 
-  // Generate pagination items
+  // Existing renderPaginationItems function (unchanged)
   const renderPaginationItems = () => {
     const items = [];
-
-    // Show max 5 page links
     const maxPages = Math.min(5, pagination.totalPages);
     let startPage = Math.max(1, pagination.pageNumber - 2);
     let endPage = Math.min(pagination.totalPages, startPage + maxPages - 1);
-
-    // Adjust startPage if endPage is maxed out
     if (endPage - startPage + 1 < maxPages) {
       startPage = Math.max(1, endPage - maxPages + 1);
     }
-
     for (let i = startPage; i <= endPage; i++) {
       items.push(
         <PaginationItem key={i}>
@@ -242,14 +293,13 @@ export default function EmployeeTable() {
         </PaginationItem>
       );
     }
-
     return items;
   };
 
   return (
     <Card className="m-4">
       <CardContent className="pt-6">
-        {/* Search and Role Filter UI */}
+        {/* Search and Role Filter UI (unchanged) */}
         <div className="flex flex-col md:flex-row items-center justify-between py-4 gap-4">
           <div className="flex w-full md:w-auto items-center gap-2">
             <Input
@@ -266,9 +316,7 @@ export default function EmployeeTable() {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="senior_employee">Senior Employee</SelectItem>
-                <SelectItem value="assigned_employee">
-                  Assigned Employee
-                </SelectItem>
+                <SelectItem value="assigned_employee">Assigned Employee</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -296,13 +344,7 @@ export default function EmployeeTable() {
                         visible={true}
                         height="80"
                         width="80"
-                        colors={[
-                          "#e15b64",
-                          "#f47e60",
-                          "#f8b26a",
-                          "#abbd81",
-                          "#849b87",
-                        ]}
+                        colors={["#e15b64", "#f47e60", "#f8b26a", "#abbd81", "#849b87"]}
                         ariaLabel="color-ring-loading"
                         wrapperStyle={{}}
                         wrapperClass="color-ring-wrapper"
@@ -323,9 +365,7 @@ export default function EmployeeTable() {
                           />
                           <AvatarFallback>
                             {employee.firstName.charAt(0)}
-                            {employee.lastName
-                              ? employee.lastName.charAt(0)
-                              : ""}
+                            {employee.lastName ? employee.lastName.charAt(0) : ""}
                           </AvatarFallback>
                         </Avatar>
                         <div className="font-medium">{`${employee.firstName} ${employee.lastName}`}</div>
@@ -338,9 +378,7 @@ export default function EmployeeTable() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={employee.isVerified ? "success" : "outline"}
-                      >
+                      <Badge variant={employee.isVerified ? "success" : "outline"}>
                         {employee.isVerified ? "Verified" : "Pending"}
                       </Badge>
                     </TableCell>
@@ -355,9 +393,7 @@ export default function EmployeeTable() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() =>
-                              navigator.clipboard.writeText(employee.userId)
-                            }
+                            onClick={() => navigator.clipboard.writeText(employee.userId)}
                           >
                             Copy user ID
                           </DropdownMenuItem>
@@ -370,15 +406,19 @@ export default function EmployeeTable() {
                           >
                             View details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Edit employee</DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                             setEmployeeToDelete(employee);
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(employee)}
+                          >
+                            Edit employee
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEmployeeToDelete(employee);
                               setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <span>Delete</span>
-                        </DropdownMenuItem>
+                            }}
+                          >
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -395,33 +435,125 @@ export default function EmployeeTable() {
           </Table>
         </div>
 
-         {/* Delete Confirmation Dialog */}
-<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-  <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
-    <AlertDialogHeader>
-      <AlertDialogTitle className="text-black dark:text-white">Are you absolutely sure?</AlertDialogTitle>
-      <AlertDialogDescription className="text-black dark:text-white">
-        This action cannot be undone. This will permanently delete the
-        employee{" "}
-        <strong className="text-red-600">{`${employeeToDelete?.firstName} ${employeeToDelete?.lastName}`}</strong>.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
-      <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={handleDeleteEmployee}>
-        Delete
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+        {/* Edit Employee Dialog */}
+        <AlertDialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-black dark:text-white">
+                Edit Employee
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-black dark:text-white">
+                Update the details for{" "}
+                <strong>{`${employeeToEdit?.firstName} ${employeeToEdit?.lastName}`}</strong>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-black dark:text-white">
+                  First Name
+                </label>
+                <Input
+                  value={editForm.firstName}
+                  onChange={(e) => handleEditFormChange(e, "firstName")}
+                  placeholder="Enter first name"
+                  className="text-black dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-black dark:text-white">
+                  Last Name
+                </label>
+                <Input
+                  value={editForm.lastName}
+                  onChange={(e) => handleEditFormChange(e, "lastName")}
+                  placeholder="Enter last name"
+                  className="text-black dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-black dark:text-white">
+                  Role
+                </label>
+                <Select
+                  value={editForm.role}
+                  onValueChange={(value) => handleEditFormChange(value, "role")}
+                >
+                  <SelectTrigger className="w-full text-black dark:text-white">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="senior_employee">Senior Employee</SelectItem>
+                    <SelectItem value="assigned_employee">Assigned Employee</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+                    <div>
+        <label className="text-sm font-medium text-black dark:text-white">
+          Salary
+        </label>
+        <Input
+          type="number"
+          value={editForm.salary}
+          onChange={(e) => handleEditFormChange(e, "salary")}
+          placeholder="Enter salary"
+          className="text-black dark:text-white"
+          min="0"
+        />
+      </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                onClick={handleUpdateEmployee}
+                disabled={isUpdating}
+              >
+                {isUpdating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Save Changes"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-        {/* Footer with Pagination */}
+        {/* Delete Confirmation Dialog (unchanged) */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-black dark:text-white">
+                Are you absolutely sure?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-black dark:text-white">
+                This action cannot be undone. This will permanently delete the
+                employee{" "}
+                <strong className="text-red-600">{`${employeeToDelete?.firstName} ${employeeToDelete?.lastName}`}</strong>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={handleDeleteEmployee}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Footer with Pagination (unchanged) */}
         <div className="flex justify-between items-center space-x-2 py-6">
           <div className="text-sm text-muted-foreground">
             Showing <span className="font-medium">{employees.length}</span> of{" "}
             <span className="font-medium">{pagination.total}</span> employees
           </div>
-
           {pagination.totalPages > 1 && (
             <Pagination>
               <PaginationContent>
@@ -441,16 +573,13 @@ export default function EmployeeTable() {
                     }
                   />
                 </PaginationItem>
-
                 {renderPaginationItems()}
-
                 {pagination.totalPages > 5 &&
                   pagination.pageNumber + 2 < pagination.totalPages && (
                     <PaginationItem>
                       <PaginationEllipsis />
                     </PaginationItem>
                   )}
-
                 <PaginationItem>
                   <PaginationNext
                     href="#"
@@ -475,6 +604,4 @@ export default function EmployeeTable() {
     </Card>
   );
 }
-
-
 
