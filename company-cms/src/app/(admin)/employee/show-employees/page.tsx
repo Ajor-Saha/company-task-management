@@ -67,6 +67,7 @@ interface Employee {
   isVerified: boolean;
   createdAt: string;
   avatar?: string;
+  salary?: number;
 }
 
 interface EmployeeResponse {
@@ -125,6 +126,74 @@ export default function EmployeeTable() {
 
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+    // New state for edit dialog
+  const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    role: "",
+    salary: 0,
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Replace the openEditDialog function with this
+const openEditDialog = (employee: Employee) => {
+  setEmployeeToEdit(employee);
+  setEditForm({
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+    role: employee.role,
+    salary: employee.salary ?? 0, // Use existing salary or default to 0
+  });
+  setEditDialogOpen(true);
+};
+
+    // New handler for updating employee
+  const handleUpdateEmployee = async () => {
+    if (!employeeToEdit) return;
+
+    setIsUpdating(true);
+    try {
+      // Replace with your actual API endpoint for updating employee
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/employee/update/${employeeToEdit.userId}`,
+        {
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          role: editForm.role,
+          salary: editForm.salary, // Include salary in the payload
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Employee updated successfully");
+        setEditDialogOpen(false);
+        fetchEmployees(); // Refresh the employee list
+      } else {
+        toast.error("Failed to update employee");
+      }
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      toast.error("An error occurred while updating the employee");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+    // Replace the handleEditFormChange function with this
+const handleEditFormChange = (
+  e: React.ChangeEvent<HTMLInputElement> | string,
+  field: string
+) => {
+  if (typeof e === "string") {
+    setEditForm((prev) => ({ ...prev, [field]: e }));
+  } else {
+    const value = field === "salary" ? Number(e.target.value) : e.target.value;
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  }
+};
 
   // Fetch employees with search, filter, and pagination
   const fetchEmployees = useCallback(async () => {
@@ -370,7 +439,9 @@ export default function EmployeeTable() {
                           >
                             View details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Edit employee</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditDialog(employee)}>
+                            Edit employee
+                          </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
                              setEmployeeToDelete(employee);
@@ -394,6 +465,92 @@ export default function EmployeeTable() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Edit Employee Dialog */}
+        <AlertDialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-black dark:text-white">
+                Edit Employee
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-black dark:text-white">
+                Update the details for{" "}
+                <strong>{`${employeeToEdit?.firstName} ${employeeToEdit?.lastName}`}</strong>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-black dark:text-white">
+                  First Name
+                </label>
+                <Input
+                  value={editForm.firstName}
+                  onChange={(e) => handleEditFormChange(e, "firstName")}
+                  placeholder="Enter first name"
+                  className="text-black dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-black dark:text-white">
+                  Last Name
+                </label>
+                <Input
+                  value={editForm.lastName}
+                  onChange={(e) => handleEditFormChange(e, "lastName")}
+                  placeholder="Enter last name"
+                  className="text-black dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-black dark:text-white">
+                  Role
+                </label>
+                <Select
+                  value={editForm.role}
+                  onValueChange={(value) => handleEditFormChange(value, "role")}
+                >
+                  <SelectTrigger className="w-full text-black dark:text-white">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="senior_employee">Senior Employee</SelectItem>
+                    <SelectItem value="assigned_employee">Assigned Employee</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+                    <div>
+        <label className="text-sm font-medium text-black dark:text-white">
+          Salary
+        </label>
+        <Input
+          type="number"
+          value={editForm.salary}
+          onChange={(e) => handleEditFormChange(e, "salary")}
+          placeholder="Enter salary"
+          className="text-black dark:text-white"
+          min="0"
+        />
+      </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                onClick={handleUpdateEmployee}
+                disabled={isUpdating}
+              >
+                {isUpdating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Save Changes"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
          {/* Delete Confirmation Dialog */}
 <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -475,6 +632,5 @@ export default function EmployeeTable() {
     </Card>
   );
 }
-
 
 
