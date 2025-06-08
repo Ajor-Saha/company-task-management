@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createCompany, getCompanyDetails, getDashboardMetrics, getMonthlySalesData, getProjectTaskStats, getRecentEmployees, updateCompanyDetails } from '../controllers/company-controllers';
+import { createCompany, getCompanyDetails, getCompanyProjectsAndEmployees, getDashboardMetrics, getMonthlySalesData, getProjectTaskStats, getRecentEmployees, updateCompanyDetails } from '../controllers/company-controllers';
 import { verifyJWT } from '../middleware/auth-middleware';
 
 const company_router = Router();
@@ -14,5 +14,6 @@ company_router.route('/get-dashboard-metrics').get(verifyJWT, getDashboardMetric
 company_router.route('/get-recent-employees').get(verifyJWT, getRecentEmployees); // Get recent employees
 company_router.route('/get-monthly-sales-data').get(verifyJWT, getMonthlySalesData); // Get monthly sales data
 company_router.route('/get-project-stats/:projectId').get(verifyJWT, getProjectTaskStats); // Get project stats
+company_router.route('/get-projects-and-employees').get(verifyJWT, getCompanyProjectsAndEmployees); // Get projects and employees
 
 export default company_router; 

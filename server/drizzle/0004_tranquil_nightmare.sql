@@ -1,0 +1,1 @@
+ALTER TABLE "tbl_post" ADD COLUMN "mention" jsonb;

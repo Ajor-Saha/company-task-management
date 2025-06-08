@@ -1,0 +1,1 @@
+ALTER TABLE "tbl_post" ALTER COLUMN "mention" SET DEFAULT '[]'::jsonb;

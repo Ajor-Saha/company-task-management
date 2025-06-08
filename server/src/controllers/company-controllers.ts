@@ -525,3 +525,57 @@ export const getAdminProjects = asyncHandler(
   }
 );
 
+export const getCompanyProjectsAndEmployees = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const companyId = req.user?.companyId;
+
+      if (!companyId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: Company ID not found"));
+      }
+
+      // Get all projects for the company
+      const projects = await db
+        .select({
+          id: projectTable.id,
+          name: projectTable.name,
+          description: projectTable.description,
+          status: projectTable.status,
+          startDate: projectTable.startDate,
+        })
+        .from(projectTable)
+        .where(eq(projectTable.companyId, companyId))
+        .orderBy(projectTable.createdAt);
+
+      // Get all employees for the company
+      const employees = await db
+        .select({
+          userId: userTable.userId,
+          firstName: userTable.firstName,
+          lastName: userTable.lastName,
+          email: userTable.email,
+          avatar: userTable.avatar,
+          role: userTable.role,
+        })
+        .from(userTable)
+        .where(eq(userTable.companyId, companyId))
+        .orderBy(userTable.firstName);
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { projects, employees },
+            "Company projects and employees retrieved successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Error fetching company projects and employees:", error);
+      return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
+
