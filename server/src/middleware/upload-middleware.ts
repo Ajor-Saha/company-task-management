@@ -46,6 +46,10 @@ export const uploadFilesMiddleware = (req: Request, res: Response, next: NextFun
     }
     
     console.log('Parsed files:', files);
+    console.log('Parsed fields:', fields);
+    
+    // Attach fields to req.body
+    req.body = { ...req.body, ...fields };
     
     // Handle the 'files' field specifically
     const uploadedFiles = files.files;

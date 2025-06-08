@@ -15,6 +15,7 @@ import { db } from "./db";
 import { messageTable } from "./db/schema";
 import chat_router from "./routes/chat-route";
 import bot_router from "./routes/bot-route";
+import post_router from "./routes/post-route";
 
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use("/api/employee", employee_router);
 app.use("/api/task", task_router);
 app.use("/api/message", chat_router);
 app.use("/api/ai-support", bot_router);
+app.use("/api/post", post_router)
 
 app.get("/", (req, res) => {
   res.send("Company & task server is running");

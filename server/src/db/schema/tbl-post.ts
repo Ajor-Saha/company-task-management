@@ -8,11 +8,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { userTable } from "./tbl-user";
 import { companyTable } from "./tbl-company";
+import { Mention, PostFile } from "../../types/common";
 
-type PostFile = {
-    id: string;
-    url: string;
-};
+
 
 export const postTable = pgTable("tbl_post", {
   id: text("id").notNull().primaryKey(),
@@ -25,6 +23,7 @@ export const postTable = pgTable("tbl_post", {
     .references(() => companyTable.id, { onDelete: "cascade" })
     .notNull(),
   files: jsonb("files").$type<PostFile[]>().default([]),
+  mention: jsonb("mention").$type<Mention[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .default(sql`current_timestamp`)
