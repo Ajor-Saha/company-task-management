@@ -168,14 +168,14 @@ export default function PageLandingSection() {
                     <div className="bg-radial-[at_75%_25%] to-background z-1 -inset-17 absolute from-transparent to-75%"></div>
 
                     <Image
-                      src="/asset/darkdashboard.png"
+                      src="/asset/updated_dashboard.png"
                       className="hidden dark:block"
                       alt="darkdashboard.png"
                       width={2797}
                       height={1137}
                     />
                     <Image
-                      src="/asset/lightdashbord.png"
+                      src="/asset/updated_light_dashboard.png"
                       className="dark:hidden"
                       alt="lightdashbord.png"
                       width={2797}

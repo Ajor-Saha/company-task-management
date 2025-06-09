@@ -188,7 +188,7 @@ export default function EmployeePerformance() {
                 <TableHead className="text-center">In Progress</TableHead>
                 <TableHead className="text-center">Completed</TableHead>
                 <TableHead className="text-center">Overdue</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                {/* <TableHead className="text-right">Actions</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -242,7 +242,7 @@ export default function EmployeePerformance() {
                         {stat.overdue}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    {/* <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -256,7 +256,7 @@ export default function EmployeePerformance() {
                           <DropdownMenuItem>Export Data</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
+                    </TableCell> */}
                   </TableRow>
                 ))
               ) : (
