@@ -296,14 +296,14 @@ export default function PageLandingSection() {
 
     {/* Light mode image */}
     <img
-      src="/asset/task-light.png"
+      src="/asset/project_cms_light.png"
       alt="Task Management Light Mode"
       className="block dark:hidden mx-auto rounded-xl shadow"
     />
 
     {/* Dark mode image */}
     <img
-      src="/asset/task-dark.png"
+      src="/asset/project_cms_dark.png"
       alt="Task Management Dark Mode"
       className="hidden dark:block mx-auto rounded-xl shadow"
     />
