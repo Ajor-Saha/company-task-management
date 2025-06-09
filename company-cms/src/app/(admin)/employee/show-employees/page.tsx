@@ -158,7 +158,7 @@ const openEditDialog = (employee: Employee) => {
     try {
       // Replace with your actual API endpoint for updating employee
       const response = await Axios.put(
-        `${env.BACKEND_BASE_URL}/api/employee/update/${employeeToEdit.userId}`,
+        `${env.BACKEND_BASE_URL}/api/employee/update-employee/${employeeToEdit.userId}`,
         {
           firstName: editForm.firstName,
           lastName: editForm.lastName,
@@ -242,7 +242,25 @@ const handleEditFormChange = (
 
   // Handle delete employee
   const handleDeleteEmployee = async () => {
-    
+    const employeeId = employeeToDelete?.userId;
+    if (!employeeId) return;
+    try {
+      const response = await Axios.delete(
+        `${env.BACKEND_BASE_URL}/api/employee/delete/${employeeId}`
+      );
+
+      if (response.data.success) {
+        toast.success("Employee deleted successfully");
+        setDeleteDialogOpen(false);
+        setEmployeeToDelete(null);
+        fetchEmployees(); // Refresh the employee list
+      } else {
+        toast.error("Failed to delete employee");
+      }
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      toast.error("An error occurred while deleting the employee");
+    }
   };
 
 
