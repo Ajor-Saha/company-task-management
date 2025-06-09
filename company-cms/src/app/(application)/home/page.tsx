@@ -272,14 +272,14 @@ export default function PageLandingSection() {
     <div className="mt-10">
       {/* Light mode image */}
       <img
-        src="/asset/employee-performance-light.png"  // replace with your light mode image path
+        src="/asset/employee_desc_light.png"  // replace with your light mode image path
         alt="Employee Performance Tracker light mode"
         className="mx-auto rounded-lg shadow-lg max-w-full border border-gray-300 dark:hidden"
         loading="lazy"
       />
       {/* Dark mode image */}
       <img
-        src="/asset/employee-performance-dark.png"  // replace with your dark mode image path
+        src="/asset/employee_desc_dark.png"  // replace with your dark mode image path
         alt="Employee Performance Tracker dark mode"
         className="mx-auto rounded-lg shadow-lg max-w-full border border-gray-700 hidden dark:block"
         loading="lazy"
