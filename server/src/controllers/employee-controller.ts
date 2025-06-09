@@ -14,9 +14,15 @@ import { v4 as uuidv4 } from "uuid";
 import { eq, ilike, or, and, sql, SQL, count, notInArray } from "drizzle-orm";
 import { sendEmployeeDetailsEmail } from "../utils/send-employee-crediential";
 import jwt from "jsonwebtoken";
+import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv";
+dotenv.config();
 
 const VALID_ROLES = ["admin", "senior_employee", "assigned_employee"] as const;
 type Role = (typeof VALID_ROLES)[number];
+
+// Initialize Google Gemini AI
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export const addEmployee = asyncHandler(async (req: Request, res: Response) => {
   try {
@@ -285,13 +291,15 @@ export const getCompanyEmployees = asyncHandler(
 
       // Check if the user is an admin and has a companyId
       if (!companyId) {
-        return res.status(401).json(
-          new ApiResponse(
-            401,
-            {},
-            "Unauthorized: You are not an admin or company not found"
-          )
-        );
+        return res
+          .status(401)
+          .json(
+            new ApiResponse(
+              401,
+              {},
+              "Unauthorized: You are not an admin or company not found"
+            )
+          );
       }
 
       // Fetch all employees for the company
@@ -310,13 +318,11 @@ export const getCompanyEmployees = asyncHandler(
         .where(eq(userTable.companyId, companyId))
         .orderBy(userTable.createdAt);
 
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          employees,
-          "Employees retrieved successfully"
-        )
-      );
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, employees, "Employees retrieved successfully")
+        );
     } catch (error) {
       console.error("Error fetching employees:", error);
       return res
@@ -330,7 +336,7 @@ export const updateEmployee = asyncHandler(
   async (req: Request, res: Response) => {
     try {
       const { employeeId } = req.params;
-      const { firstName, lastName, role } = req.body;
+      const { firstName, lastName, role, salary } = req.body;
       const companyId = req.user.companyId;
 
       // Check if the user is an admin
@@ -347,14 +353,14 @@ export const updateEmployee = asyncHandler(
       }
 
       // Ensure at least one field is provided for update
-      if (!firstName && !lastName && !role) {
+      if (!firstName && !lastName && !role && !salary) {
         return res
           .status(400)
           .json(
             new ApiResponse(
               400,
               {},
-              "At least one field (firstName, lastName, role) is required to update"
+              "At least one field (firstName, lastName, role, salary) is required to update"
             )
           );
       }
@@ -389,6 +395,7 @@ export const updateEmployee = asyncHandler(
       if (firstName) updateData.firstName = firstName.trim();
       if (lastName) updateData.lastName = lastName.trim();
       if (role) updateData.role = role.trim();
+      if (salary) updateData.salary = salary.toString().trim();
 
       // Perform the update
       await db
@@ -447,7 +454,6 @@ export const deleteEmployee = asyncHandler(
       // Delete the employee
       await db.delete(userTable).where(eq(userTable.userId, employeeId));
 
-      
       return res
         .status(200)
         .json(new ApiResponse(200, {}, "Employee deleted successfully"));
@@ -567,7 +573,6 @@ export const getAvailableEmployeeToProject = asyncHandler(
   }
 );
 
-
 export const getEmployeeStats = asyncHandler(
   async (req: Request, res: Response) => {
     try {
@@ -599,24 +604,37 @@ export const getEmployeeStats = asyncHandler(
           .json(new ApiResponse(404, {}, "Employee not found"));
       }
 
-      // Get task statistics - split the queries to get accurate counts
+      // Get task statistics with end date for overdue calculation
       const allTasks = await db
         .select({
           id: taskTable.id,
           status: taskTable.status,
+          endDate: taskTable.endDate,
         })
         .from(taskTable)
         .where(eq(taskTable.assignedTo, employeeId));
-      
-      // Count tasks by status
-      const taskStats = [{
-        totalTasks: allTasks.length,
-        todo: allTasks.filter(task => task.status === "to-do").length,
-        inProgress: allTasks.filter(task => task.status === "in-progress").length,
-        completed: allTasks.filter(task => task.status === "completed").length,
-        hold: allTasks.filter(task => task.status === "hold").length,
-        review: allTasks.filter(task => task.status === "review").length,
-      }];
+
+      const currentDate = new Date();
+
+      // Count tasks by status and calculate overdue tasks
+      const taskStats = [
+        {
+          totalTasks: allTasks.length,
+          todo: allTasks.filter((task) => task.status === "to-do").length,
+          inProgress: allTasks.filter((task) => task.status === "in-progress")
+            .length,
+          completed: allTasks.filter((task) => task.status === "completed")
+            .length,
+          hold: allTasks.filter((task) => task.status === "hold").length,
+          review: allTasks.filter((task) => task.status === "review").length,
+          overdue: allTasks.filter(
+            (task) =>
+              task.endDate &&
+              new Date(task.endDate) < currentDate &&
+              task.status !== "completed"
+          ).length,
+        },
+      ];
 
       // Get projects where employee is directly assigned
       const directlyAssignedProjects = await db
@@ -636,38 +654,44 @@ export const getEmployeeStats = asyncHandler(
 
       // Combine and get unique project count using Set
       const allProjectIds = new Set([
-        ...directlyAssignedProjects.map(p => p.projectId),
-        ...projectsFromTasks.map(p => p.projectId)
+        ...directlyAssignedProjects.map((p) => p.projectId),
+        ...projectsFromTasks.map((p) => p.projectId),
       ]);
 
       // Calculate task completion rate
-      const completionRate = taskStats[0].totalTasks > 0
-        ? Math.round((taskStats[0].completed / taskStats[0].totalTasks) * 100)
-        : 0;
+      const completionRate =
+        taskStats[0].totalTasks > 0
+          ? Math.round((taskStats[0].completed / taskStats[0].totalTasks) * 100)
+          : 0;
 
       return res.status(200).json(
-        new ApiResponse(200, {
-          employee: {
-            userId: employee[0].userId,
-            name: `${employee[0].firstName} ${employee[0].lastName}`,
-            role: employee[0].role,
-            avatar: employee[0].avatar,
-          },
-          stats: {
-            tasks: {
-              total: taskStats[0].totalTasks,
-              todo: taskStats[0].todo,
-              inProgress: taskStats[0].inProgress,
-              completed: taskStats[0].completed,
-              hold: taskStats[0].hold,
-              review: taskStats[0].review,
-              completionRate: completionRate,
+        new ApiResponse(
+          200,
+          {
+            employee: {
+              userId: employee[0].userId,
+              name: `${employee[0].firstName} ${employee[0].lastName}`,
+              role: employee[0].role,
+              avatar: employee[0].avatar,
             },
-            projects: {
-              total: allProjectIds.size,
-            }
-          }
-        }, "Employee statistics retrieved successfully")
+            stats: {
+              tasks: {
+                total: taskStats[0].totalTasks,
+                todo: taskStats[0].todo,
+                inProgress: taskStats[0].inProgress,
+                completed: taskStats[0].completed,
+                hold: taskStats[0].hold,
+                review: taskStats[0].review,
+                overdue: taskStats[0].overdue,
+                completionRate: completionRate,
+              },
+              projects: {
+                total: allProjectIds.size,
+              },
+            },
+          },
+          "Employee statistics retrieved successfully"
+        )
       );
     } catch (error) {
       console.error("Error fetching employee stats:", error);
@@ -678,3 +702,116 @@ export const getEmployeeStats = asyncHandler(
   }
 );
 
+export const analyzeEmployeePerformance = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const companyId = req.user.companyId;
+      const employeeStatsData = req.body;
+
+      // Check if user has permission (admin or senior_employee)
+      if (
+        !companyId ||
+        (req.user.role !== "admin" && req.user.role !== "senior_employee")
+      ) {
+        return res
+          .status(401)
+          .json(
+            new ApiResponse(
+              401,
+              {},
+              "Unauthorized: Only admins and senior employees can analyze performance"
+            )
+          );
+      }
+
+      // Validate that employee stats data is provided
+      if (
+        !employeeStatsData ||
+        !employeeStatsData.employee ||
+        !employeeStatsData.stats
+      ) {
+        return res
+          .status(400)
+          .json(
+            new ApiResponse(400, {}, "Employee statistics data is required")
+          );
+      }
+
+      // Check if Gemini API key is configured
+      if (!process.env.GEMINI_API_KEY) {
+        return res
+          .status(500)
+          .json(new ApiResponse(500, {}, "AI service not configured"));
+      }
+
+      // Create the prompt for AI analysis
+      const prompt = `You are an AI HR assistant helping evaluate employee performance. Based on the following JSON data, analyze the employee's productivity, identify strengths and weaknesses, suggest improvements, and give a simple recommendation on whether the employee should be supported, warned, reassigned, or considered for termination.
+                        Please provide the response in this structure:
+                          1. Performance Summary
+                          2. Key Observations
+                          3. Improvement Suggestions (in simple language)
+                          4. AI Recommendation (short and clear)
+                        Here is the employee data: ${JSON.stringify(employeeStatsData, null, 2)}`;
+
+      console.log("Sending request to Gemini AI for employee analysis...");
+
+      // Generate AI response using Gemini
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-pro-preview-06-05",
+        contents: prompt,
+      });
+
+      const aiAnalysis = response?.text || "";
+
+      if (!aiAnalysis) {
+        return res
+          .status(500)
+          .json(new ApiResponse(500, {}, "Failed to generate AI analysis"));
+      }
+
+      console.log("AI analysis completed successfully");
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            employeeData: employeeStatsData,
+            aiAnalysis: aiAnalysis,
+            generatedAt: new Date().toISOString(),
+          },
+          "Employee performance analysis completed successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error analyzing employee performance:", error);
+
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      // Handle specific Gemini API errors
+      if (errorMessage.includes("API_KEY")) {
+        return res
+          .status(500)
+          .json(new ApiResponse(500, {}, "AI service authentication failed"));
+      }
+
+      if (errorMessage.includes("quota") || errorMessage.includes("limit")) {
+        return res
+          .status(429)
+          .json(
+            new ApiResponse(
+              429,
+              {},
+              "AI service rate limit exceeded. Please try again later."
+            )
+          );
+      }
+
+      return res
+        .status(500)
+        .json(
+          new ApiResponse(500, {}, "Failed to analyze employee performance")
+        );
+    }
+  }
+);
