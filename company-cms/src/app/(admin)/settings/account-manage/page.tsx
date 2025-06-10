@@ -2,54 +2,88 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Upload, Trash2, Loader2 } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { formSchema } from "@/schemas/update-profile-schema";
 import { env } from "@/config/env";
 import type { ApiResponse } from "@/types/api-success-type";
 import useAuthStore from "@/store/store";
 import { Axios } from "@/config/axios";
 
 
-interface profile {
-  firstName: string;
-  lastName: string;
-  email: string;
-  avatar?: any;
-}
-
-
-
 export default function ProfileSettings() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [profile, setProfile] = useState<profile | null>(null);
   const { user, updateUser } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
- 
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: profile || {
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
-      email: user?.email || "",
-    },
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: ""
   });
+
+  // Initialize form with user data
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || ""
+      });
+    }
+  }, [user]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log("Submitting form with data:", formData);
+    
+    if (!formData.firstName || !formData.lastName) {
+      toast.error("First name and last name are required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await Axios.put(
+        `${env.BACKEND_BASE_URL}/api/auth/update-profile`,
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Profile updated successfully!");
+        // Update local state and auth store
+        updateUser({
+          ...user,
+          firstName: formData.firstName,
+          lastName: formData.lastName
+        });
+      } else {
+        toast.error(response.data.message || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      const axiosError = error as AxiosError<ApiResponse>;
+      const errorMessage = axiosError.response?.data.message ?? "An error occurred while updating the profile.";
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -57,7 +91,7 @@ export default function ProfileSettings() {
 
     setIsUploadingPhoto(true);
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append("avatar", file);
 
     try {
       const response = await Axios.put(
@@ -65,27 +99,24 @@ export default function ProfileSettings() {
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
         }
       );
-      
+
       if (response.data.data) {
-        // Update the user's avatar in the store or state
-        setProfile((prev) => prev ? { ...prev, avatar: response.data.data.avatar } : null);
         updateUser({ avatar: response.data.data.avatar });
       }
-      toast.success('Profile picture updated successfully!');
+      toast.success("Profile picture updated successfully!");
     } catch (error) {
-      console.error('Error uploading profile picture:', error);
+      console.error("Error uploading profile picture:", error);
       const axiosError = error as AxiosError<ApiResponse>;
-      const errorMessage = axiosError.response?.data.message ?? 'An error occurred while updating the profile picture.';
+      const errorMessage = axiosError.response?.data.message ?? "An error occurred while updating the profile picture.";
       toast.error(errorMessage);
     } finally {
       setIsUploadingPhoto(false);
-      // Reset the file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -94,51 +125,21 @@ export default function ProfileSettings() {
     setIsUploadingPhoto(true);
     try {
       await Axios.delete(`${env.BACKEND_BASE_URL}/api/update-profile-picture`);
-      setProfile((prev) => prev ? { ...prev, avatar: undefined } : null);
-      toast.success('Profile picture deleted successfully!');
+      updateUser({ ...user, avatar: undefined });
+      toast.success("Profile picture deleted successfully!");
     } catch (error) {
-      console.error('Error deleting profile picture:', error);
+      console.error("Error deleting profile picture:", error);
       const axiosError = error as AxiosError<ApiResponse>;
-      const errorMessage = axiosError.response?.data.message ?? 'An error occurred while deleting the profile picture.';
+      const errorMessage = axiosError.response?.data.message ?? "An error occurred while deleting the profile picture.";
       toast.error(errorMessage);
     } finally {
       setIsUploadingPhoto(false);
     }
   };
 
-  // Handle form submission
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true);
-    try {
-      const response = await Axios.put(
-        `${env.BACKEND_BASE_URL}/api/profile/update`,
-        data
-      );
-      toast.success("Profile updated successfully!");
-      if (response.data.data) {
-        setProfile(response.data.data);
-      }
-      // Update the local profile state with new data
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      const axiosError = error as AxiosError<ApiResponse>;
-      const errorMessage =
-        axiosError.response?.data.message ??
-        "An error occurred while updating the profile.";
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  
-
- 
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex flex-col min-h-screen bg-background text-foreground">
-        {/* Main Content */}
         <div className="flex-1 p-6 md:p-8 overflow-auto">
           <div className="max-w-3xl mx-auto">
             <div className="flex justify-between items-center mb-8">
@@ -153,14 +154,11 @@ export default function ProfileSettings() {
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-medium mb-4">
-                    Your profile photo
-                  </h2>
+                  <h2 className="text-lg font-medium mb-4">Your profile photo</h2>
                   <div className="flex items-start gap-4">
                     <div className="relative">
                       <div className="w-24 h-24 rounded-full overflow-hidden border border-border">
                         <Image
-                          // src={profile.photo ||"/asset/mysterious-mafia-man-smoking-cigarette_52683-34828.avif"}
                           src={user?.avatar || "/asset/mysterious-mafia-man-smoking-cigarette_52683-34828.avif"}
                           alt="Profile"
                           width={96}
@@ -215,79 +213,56 @@ export default function ProfileSettings() {
                   </div>
                 </div>
 
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={form.control}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">First Name</label>
+                    <Input
                       name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input {...field}
-                            placeholder="Enter First Name"
-                            />
-                            
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      placeholder="Enter First Name"
+                      required
                     />
+                  </div>
 
-                    <FormField
-                      control={form.control}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Last Name</label>
+                    <Input
                       name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} 
-                            placeholder=" Enter Last Name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      placeholder="Enter Last Name"
+                      required
                     />
+                  </div>
 
-                    <FormField
-                      control={form.control}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Email Address</label>
+                    <Input
                       name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Address</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              disabled
-                              className="bg-muted/30 text-muted-foreground cursor-not-allowed"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      value={formData.email}
+                      disabled
+                      className="bg-muted/30 text-muted-foreground cursor-not-allowed"
                     />
+                  </div>
 
-                    <Button
-                      type="submit"
-                      className="w-full cursor-pointer mt-8 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white rounded-l py-4 font-medium text-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
-                      disabled={isSubmitting}
-                    >
-                       {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Please wait
-                </>
-              ) : (
-                "Update Profile"
-              )}
-                    </Button>
-                  </form>
-                </Form>
+                  <Button
+                    type="submit"
+                    className="w-full cursor-pointer mt-8 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white rounded-l py-4 font-medium text-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Please wait
+                      </>
+                    ) : (
+                      "Update Profile"
+                    )}
+                  </Button>
+                </form>
               </div>
+
               <div className="flex flex-col justify-between items-start flex-grow w-full border border-border rounded-lg p-6">
                 <div className="relative w-full h-auto flex-grow py-4">
                   <Image

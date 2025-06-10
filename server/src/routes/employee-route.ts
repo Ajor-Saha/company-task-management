@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { verifyJWT } from '../middleware/auth-middleware';
-import { addEmployee, analyzeEmployeePerformance, employeeLogin, getAllEmployees, getAvailableEmployeeToProject, getCompanyEmployees, getEmployeeStats, updateEmployee } from '../controllers/employee-controller';
+import { addEmployee, analyzeEmployeePerformance, deleteEmployee, employeeLogin, getAllEmployees, getAvailableEmployeeToProject, getCompanyEmployees, getEmployeeStats, updateEmployee } from '../controllers/employee-controller';
 
 
 
@@ -15,5 +15,6 @@ employee_router.route('/get-company-employee').get(verifyJWT, getCompanyEmployee
 employee_router.route('/get-employee-stats/:employeeId').get(verifyJWT, getEmployeeStats); // Assuming this is to get employee by ID
 employee_router.route('/analyze-employee-performance').post(verifyJWT, analyzeEmployeePerformance);
 employee_router.route('/update-employee/:employeeId').put(verifyJWT, updateEmployee);
+employee_router.route('/delete-employee/:employeeId').delete(verifyJWT, deleteEmployee);
 
 export default employee_router;

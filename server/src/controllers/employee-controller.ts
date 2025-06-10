@@ -255,6 +255,7 @@ export const getAllEmployees = asyncHandler(
           lastName: userTable.lastName,
           email: userTable.email,
           role: userTable.role,
+          salary: userTable.salary,
           isVerified: userTable.isVerified,
           createdAt: userTable.createdAt,
         })
@@ -311,6 +312,7 @@ export const getCompanyEmployees = asyncHandler(
           avatar: userTable.avatar,
           email: userTable.email,
           role: userTable.role,
+          salary: userTable.salary,
           isVerified: userTable.isVerified,
           createdAt: userTable.createdAt,
         })
