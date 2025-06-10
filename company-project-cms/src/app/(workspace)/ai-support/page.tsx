@@ -205,18 +205,34 @@ export default function Chat() {
       .catch(() => toast.error("Failed to copy"));
   };
 
-  const handleDelete = (messageId: string) => {
-    const updated = messages.filter((m) => m.id !== messageId);
-    setMessages(updated);
-    toast.success("Message deleted");
-  };
+  // const handleDelete = (messageId: string) => {
+  //   const updated = messages.filter((m) => m.id !== messageId);
+  //   setMessages(updated);
+  //   toast.success("Message deleted");
+  // };
 
-  const handleDirectClear = () => {
-    if (messages.length > 0) {
-      setMessages([]);
-      toast.success("Chat cleared");
+  const handleDirectClear = async () => {
+    if (messages.length > 0 || prevMessages.length > 0) {
+      try {
+        // Call the backend to delete all messages
+        const response = await Axios.delete(
+          `${env.BACKEND_BASE_URL}/api/ai-support/delete-bot-message`
+        );
+
+        if (response.data.success) {
+          // Clear both current and previous messages from the UI
+          setMessages([]);
+          setPrevMessages([]);
+          toast.success("All messages cleared");
+        } else {
+          toast.error(response.data.message || "Failed to clear messages");
+        }
+      } catch (error) {
+        console.error("Error clearing messages:", error);
+        toast.error("Failed to clear messages");
+      }
     } else {
-      toast.info("No conversation to clear");
+      toast.info("No messages to clear");
     }
   };
 
@@ -403,7 +419,7 @@ export default function Chat() {
                                 </>
                               )}
                             </Button>
-                            <Button
+                            {/* <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(m.id)}
@@ -411,7 +427,7 @@ export default function Chat() {
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
                               Delete
-                            </Button>
+                            </Button> */}
                           </div>
                         </div>
                       );
@@ -518,15 +534,7 @@ export default function Chat() {
                               </>
                             )}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(m.id)}
-                            className="h-8 px-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
+                          
                         </div>
                       </div>
                     );

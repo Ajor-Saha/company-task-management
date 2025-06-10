@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, ClipboardCheck, Tag } from "lucide-react";
+import { ChevronDown, ChevronRight, ClipboardCheck, Tag, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -21,6 +21,23 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailsDialog } from "@/components/task/task-details-dialog";
 import { TaskFile } from "@/types/task";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Axios } from "@/config/axios";
+import { env } from "@/config/env";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
+import { ApiResponse } from "@/types/api-success-type";
 
 type Task = {
   id: string;
@@ -52,6 +69,7 @@ export default function AssignedMeTask({
   lastName,
   avatar,
 }: AssignedMeTaskProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     "to-do": false,
     "in-progress": false,
@@ -60,6 +78,28 @@ export default function AssignedMeTask({
     completed: false,
   });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  const handleDeleteTask = async (taskId: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await Axios.delete(
+        `${env.BACKEND_BASE_URL}/api/task/delete-task/${taskId}`
+      );
+      
+      if (response.data?.success) {
+        toast.success('Task deleted successfully');
+        // Trigger task update event to refresh the list
+        window.dispatchEvent(new CustomEvent('task-updated'));
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      const axiosError = error as AxiosError<ApiResponse>;
+      const errorMessage = axiosError.response?.data.message ?? 'An error occurred while deleting the task.';
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const toggleSection = (status: string) => {
     setOpenSections((prev) => ({
@@ -188,7 +228,7 @@ export default function AssignedMeTask({
                               >
                                 {task.name}
                               </button>
-                              {task.projectName && (
+                              {task.projectName ? (
                                 <Badge
                                   variant="outline"
                                   className="ml-4 shrink-0"
@@ -199,6 +239,38 @@ export default function AssignedMeTask({
                                     {task.projectName}
                                   </Link>
                                 </Badge>
+                              ) : (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      className="ml-4 h-8 w-8 p-0 hover:bg-destructive/10"
+                                      disabled={isDeleting}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="dark:bg-slate-950 dark:text-white bg-slate-200 text-black">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this task? This action cannot be undone.
+                                        
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteTask(task.id)}
+                                        className="bg-destructive hover:bg-destructive/90 text-white"
+                                        disabled={isDeleting}
+                                      >
+                                        {isDeleting ? "Deleting..." : "Delete"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </div>
                           </div>

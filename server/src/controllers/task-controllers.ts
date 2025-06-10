@@ -353,16 +353,22 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
 export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   try {
     const companyId = req.user?.companyId;
-    if (!companyId) {
+    const authUser = req.user;
+    if (!companyId || !authUser) {
       return res
         .status(401)
-        .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
+        .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
     }
 
     const { taskId } = req.params;
 
+    // Get task with its files
     const [task] = await db
-      .select()
+      .select({
+        id: taskTable.id,
+        assignedTo: taskTable.assignedTo,
+        taskFiles: taskTable.taskFiles,
+      })
       .from(taskTable)
       .where(eq(taskTable.id, taskId));
 
@@ -370,11 +376,52 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
       return res.status(404).json(new ApiResponse(404, {}, "Task not found"));
     }
 
+    // Check if user is authorized to delete the task
+    const isAdmin = authUser.role === "admin";
+    const isSeniorEmployee = authUser.role === "senior_employee";
+    const isTaskOwner = task.assignedTo === authUser.userId;
+
+    if (!isAdmin && !isSeniorEmployee && !isTaskOwner) {
+      return res
+        .status(403)
+        .json(
+          new ApiResponse(
+            403,
+            {},
+            "Unauthorized: Only task owners, admins, or senior employees can delete tasks"
+          )
+        );
+    }
+
+    // Delete task files from cloud storage if they exist
+    if (task.taskFiles && Array.isArray(task.taskFiles) && task.taskFiles.length > 0) {
+      const r2 = createR2Client();
+
+      // Delete each file from R2
+      for (const file of task.taskFiles) {
+        const fileKey = file.url.split('/').pop();
+        if (fileKey) {
+          try {
+            await r2.send(
+              new DeleteObjectCommand({
+                Bucket: process.env.BUCKET_NAME!,
+                Key: fileKey,
+              })
+            );
+          } catch (error) {
+            console.error(`Error deleting file ${fileKey} from R2:`, error);
+            // Continue with other files even if one fails
+          }
+        }
+      }
+    }
+
+    // Delete task from database
     await db.delete(taskTable).where(eq(taskTable.id, taskId));
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {}, "Task deleted successfully"));
+      .json(new ApiResponse(200, {}, "Task and associated files deleted successfully"));
   } catch (error) {
     console.error("Error deleting task:", error);
     return res

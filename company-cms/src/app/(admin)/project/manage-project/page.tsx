@@ -74,7 +74,8 @@ interface Project {
   startDate?: string;
   endDate?: string;
   assignedEmployees?: Employee[];
-  totalTasks?: number;
+  taskCount: number;
+  assignedEmployeeCount: number;
 }
 
 export default function ManageProject() {
@@ -87,8 +88,6 @@ export default function ManageProject() {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const router = useRouter();
 
   const openAssignDialog = async (project: Project) => {
@@ -118,16 +117,13 @@ export default function ManageProject() {
     }
   }, []);
 
-  const handleDeleteProject = async () => {
-    if (!projectToDelete) return;
+  const handleDeleteProject = async (projectId: string) => {
     try {
       const response = await Axios.delete(
-        `${env.BACKEND_BASE_URL}/api/project/delete-project/${projectToDelete.id}`
+        `${env.BACKEND_BASE_URL}/api/project/delete-project/${projectId}`
       );
       if (response.data.success) {
         toast.success("Project deleted successfully");
-        setDeleteDialogOpen(false);
-        setProjectToDelete(null);
         fetchProjects(); // refresh list
       } else {
         toast.error(response.data.message || "Failed to delete project");
@@ -220,11 +216,11 @@ export default function ManageProject() {
                 <TableRow key={project.id}>
                   <TableCell className="font-medium">{project.name}</TableCell>
                   <TableCell className="hidden md:table-cell text-center">
-                    10
+                    {project.taskCount}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className="whitespace-nowrap">
-                      5 employees
+                      {project.assignedEmployeeCount} {project.assignedEmployeeCount === 1 ? 'employee' : 'employees'}
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-center">
@@ -257,15 +253,36 @@ export default function ManageProject() {
                           <span>Edit</span>
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setProjectToDelete(project);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Delete className="mr-2 h-4 w-4" />
-                          <span>Delete</span>
-                        </DropdownMenuItem>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <Delete className="mr-2 h-4 w-4" />
+                              <span>Delete</span>
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-black dark:text-white">
+                                Are you absolutely sure?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="text-black dark:text-white">
+                                This action cannot be undone. This will permanently delete the project
+                                <strong className="text-red-600"> {project.name}</strong>.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-red-600 text-white hover:bg-red-700"
+                                onClick={() => handleDeleteProject(project.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -296,26 +313,6 @@ export default function ManageProject() {
         project={selectedProject}
         onRefreshProjects={fetchProjects}
       />
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-black dark:text-white">Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription className="text-black dark:text-white">
-              This action cannot be undone. This will permanently delete the
-              project
-              <strong className="text-red-600"> {projectToDelete?.name}</strong>
-              .
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={handleDeleteProject}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

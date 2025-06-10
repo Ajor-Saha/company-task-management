@@ -88,8 +88,34 @@ export const getCompanyProjects = asyncHandler(
           .json(new ApiResponse(401, {}, "Unauthorized: Company not found"));
       }
 
+      // First get the task counts for all projects
+      const taskCounts = await db
+        .select({
+          projectId: taskTable.projectId,
+          count: sql<number>`count(*)::integer`,
+        })
+        .from(taskTable)
+        .groupBy(taskTable.projectId);
+
+      // Get employee counts for all projects
+      const employeeCounts = await db
+        .select({
+          projectId: projectAssignmentsTable.projectId,
+          count: sql<number>`count(*)::integer`,
+        })
+        .from(projectAssignmentsTable)
+        .groupBy(projectAssignmentsTable.projectId);
+
+      // Create lookup maps for counts
+      const taskCountMap = new Map(
+        taskCounts.map(({ projectId, count }) => [projectId, count])
+      );
+      const employeeCountMap = new Map(
+        employeeCounts.map(({ projectId, count }) => [projectId, count])
+      );
+
       // Query the project table for projects that belong to the company
-      const companyProjects = await db
+      const projects = await db
         .select({
           id: projectTable.id,
           name: projectTable.name,
@@ -104,6 +130,13 @@ export const getCompanyProjects = asyncHandler(
         })
         .from(projectTable)
         .where(eq(projectTable.companyId, companyId));
+
+      // Combine the data
+      const companyProjects = projects.map(project => ({
+        ...project,
+        taskCount: taskCountMap.get(project.id) || 0,
+        assignedEmployeeCount: employeeCountMap.get(project.id) || 0,
+      }));
 
       return res
         .status(200)

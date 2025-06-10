@@ -1,8 +1,9 @@
 "use client";
 
-import { MoreHorizontal, Loader2,Delete } from "lucide-react";
+import { MoreHorizontal, Loader2, Delete } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { AxiosError } from "axios";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +54,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import { Label } from "@/components/ui/label";
+
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
 import { ColorRing } from "react-loader-spinner";
@@ -67,7 +81,7 @@ interface Employee {
   isVerified: boolean;
   createdAt: string;
   avatar?: string;
-  salary?: number;
+  salary?: string;
 }
 
 interface EmployeeResponse {
@@ -80,6 +94,11 @@ interface EmployeeResponse {
     perPage: number;
     totalPages: number;
   };
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
 }
 
 // Helper functions
@@ -124,10 +143,8 @@ export default function EmployeeTable() {
     totalPages: 0,
   });
 
-  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-    // New state for edit dialog
+  // New state for edit dialog
   const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -139,31 +156,30 @@ export default function EmployeeTable() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Replace the openEditDialog function with this
-const openEditDialog = (employee: Employee) => {
-  setEmployeeToEdit(employee);
-  setEditForm({
-    firstName: employee.firstName,
-    lastName: employee.lastName,
-    role: employee.role,
-    salary: employee.salary ?? 0, // Use existing salary or default to 0
-  });
-  setEditDialogOpen(true);
-};
+  const openEditDialog = (employee: Employee) => {
+    setEmployeeToEdit(employee);
+    setEditForm({
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      role: employee.role,
+      salary: Number(employee.salary) ?? 0, // Use existing salary or default to 0
+    });
+    setEditDialogOpen(true);
+  };
 
-    // New handler for updating employee
+  // New handler for updating employee
   const handleUpdateEmployee = async () => {
     if (!employeeToEdit) return;
 
     setIsUpdating(true);
     try {
-      // Replace with your actual API endpoint for updating employee
       const response = await Axios.put(
         `${env.BACKEND_BASE_URL}/api/employee/update-employee/${employeeToEdit.userId}`,
         {
-          firstName: editForm.firstName,
-          lastName: editForm.lastName,
-          role: editForm.role,
-          salary: editForm.salary, // Include salary in the payload
+          firstName: editForm.firstName.trim(),
+          lastName: editForm.lastName.trim(),
+          role: editForm.role.trim(),
+          salary: editForm.salary.toString()
         }
       );
 
@@ -172,28 +188,30 @@ const openEditDialog = (employee: Employee) => {
         setEditDialogOpen(false);
         fetchEmployees(); // Refresh the employee list
       } else {
-        toast.error("Failed to update employee");
+        toast.error(response.data.message || "Failed to update employee");
       }
     } catch (error) {
       console.error("Error updating employee:", error);
-      toast.error("An error occurred while updating the employee");
+      const axiosError = error as AxiosError<ApiResponse>;
+      const errorMessage = axiosError.response?.data.message ?? "An error occurred while updating the employee.";
+      toast.error(errorMessage);
     } finally {
       setIsUpdating(false);
     }
   };
 
-    // Replace the handleEditFormChange function with this
-const handleEditFormChange = (
-  e: React.ChangeEvent<HTMLInputElement> | string,
-  field: string
-) => {
-  if (typeof e === "string") {
-    setEditForm((prev) => ({ ...prev, [field]: e }));
-  } else {
-    const value = field === "salary" ? Number(e.target.value) : e.target.value;
-    setEditForm((prev) => ({ ...prev, [field]: value }));
-  }
-};
+  // Replace the handleEditFormChange function with this
+  const handleEditFormChange = (
+    value: string | React.ChangeEvent<HTMLInputElement>,
+    field: keyof typeof editForm
+  ) => {
+    const newValue = typeof value === "string" ? value : value.target.value;
+    
+    setEditForm((prev) => ({
+      ...prev,
+      [field]: newValue
+    }));
+  };
 
   // Fetch employees with search, filter, and pagination
   const fetchEmployees = useCallback(async () => {
@@ -239,30 +257,17 @@ const handleEditFormChange = (
     }
   }, [pagination.pageNumber, pagination.perPage, searchQuery, roleFilter]);
 
-
   // Handle delete employee
-  const handleDeleteEmployee = async () => {
-    const employeeId = employeeToDelete?.userId;
-    if (!employeeId) return;
+  const handleDeleteEmployee = async (employeeToDelete: Employee) => {
     try {
-      const response = await Axios.delete(
-        `${env.BACKEND_BASE_URL}/api/employee/delete/${employeeId}`
-      );
-
-      if (response.data.success) {
-        toast.success("Employee deleted successfully");
-        setDeleteDialogOpen(false);
-        setEmployeeToDelete(null);
-        fetchEmployees(); // Refresh the employee list
-      } else {
-        toast.error("Failed to delete employee");
-      }
+      await Axios.delete(`${env.BACKEND_BASE_URL}/api/employee/delete-employee/${employeeToDelete.userId}`);
+      toast.success("Employee deleted successfully");
+      fetchEmployees(); // Refresh the employee list
     } catch (error) {
       console.error("Error deleting employee:", error);
       toast.error("An error occurred while deleting the employee");
     }
   };
-
 
   // Handle page change
   const handlePageChange = useCallback((page: number) => {
@@ -436,7 +441,6 @@ const handleEditFormChange = (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -457,17 +461,46 @@ const handleEditFormChange = (
                           >
                             View details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEditDialog(employee)}>
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(employee)}
+                          >
                             Edit employee
                           </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                             setEmployeeToDelete(employee);
-                              setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <span>Delete</span>
-                        </DropdownMenuItem>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                }}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-black dark:text-white">
+                                  Are you absolutely sure?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-black dark:text-white">
+                                  This action cannot be undone. This will permanently delete the
+                                  employee{" "}
+                                  <strong className="text-red-600">{`${employee.firstName} ${employee.lastName}`}</strong>
+                                  .
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-red-600 text-white hover:bg-red-700"
+                                  onClick={() => handleDeleteEmployee(employee)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -485,49 +518,51 @@ const handleEditFormChange = (
         </div>
 
         {/* Edit Employee Dialog */}
-        <AlertDialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-black dark:text-white">
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-black">
+            <DialogHeader>
+              <DialogTitle className="text-black dark:text-white">
                 Edit Employee
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-black dark:text-white">
+              </DialogTitle>
+              <DialogDescription className="text-black dark:text-white">
                 Update the details for{" "}
-                <strong>{`${employeeToEdit?.firstName} ${employeeToEdit?.lastName}`}</strong>.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-black dark:text-white">
+                <strong>{`${employeeToEdit?.firstName} ${employeeToEdit?.lastName}`}</strong>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="firstName" className="text-black dark:text-white">
                   First Name
-                </label>
+                </Label>
                 <Input
+                  id="firstName"
                   value={editForm.firstName}
                   onChange={(e) => handleEditFormChange(e, "firstName")}
                   placeholder="Enter first name"
                   className="text-black dark:text-white"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-black dark:text-white">
+              <div className="grid gap-2">
+                <Label htmlFor="lastName" className="text-black dark:text-white">
                   Last Name
-                </label>
+                </Label>
                 <Input
+                  id="lastName"
                   value={editForm.lastName}
                   onChange={(e) => handleEditFormChange(e, "lastName")}
                   placeholder="Enter last name"
                   className="text-black dark:text-white"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-black dark:text-white">
+              <div className="grid gap-2">
+                <Label htmlFor="role" className="text-black dark:text-white">
                   Role
-                </label>
+                </Label>
                 <Select
                   value={editForm.role}
                   onValueChange={(value) => handleEditFormChange(value, "role")}
                 >
-                  <SelectTrigger className="w-full text-black dark:text-white">
+                  <SelectTrigger id="role" className="w-full text-black dark:text-white">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -537,25 +572,29 @@ const handleEditFormChange = (
                   </SelectContent>
                 </Select>
               </div>
-                    <div>
-        <label className="text-sm font-medium text-black dark:text-white">
-          Salary
-        </label>
-        <Input
-          type="number"
-          value={editForm.salary}
-          onChange={(e) => handleEditFormChange(e, "salary")}
-          placeholder="Enter salary"
-          className="text-black dark:text-white"
-          min="0"
-        />
-      </div>
+              <div className="grid gap-2">
+                <Label htmlFor="salary" className="text-black dark:text-white">
+                  Salary
+                </Label>
+                <Input
+                  id="salary"
+                  type="number"
+                  value={editForm.salary || 0}
+                  onChange={(e) => handleEditFormChange(e, "salary")}
+                  placeholder="Enter salary"
+                  className="text-black dark:text-white"
+                  min="0"
+                />
+              </div>
             </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                type="submit"
                 className="bg-blue-600 text-white hover:bg-blue-700"
                 onClick={handleUpdateEmployee}
                 disabled={isUpdating}
@@ -565,30 +604,10 @@ const handleEditFormChange = (
                 ) : (
                   "Save Changes"
                 )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-         {/* Delete Confirmation Dialog */}
-<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-  <AlertDialogContent className="bg-white dark:bg-black text-black dark:text-white">
-    <AlertDialogHeader>
-      <AlertDialogTitle className="text-black dark:text-white">Are you absolutely sure?</AlertDialogTitle>
-      <AlertDialogDescription className="text-black dark:text-white">
-        This action cannot be undone. This will permanently delete the
-        employee{" "}
-        <strong className="text-red-600">{`${employeeToDelete?.firstName} ${employeeToDelete?.lastName}`}</strong>.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel className="text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
-      <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={handleDeleteEmployee}>
-        Delete
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Footer with Pagination */}
         <div className="flex justify-between items-center space-x-2 py-6">
@@ -650,5 +669,3 @@ const handleEditFormChange = (
     </Card>
   );
 }
-
-

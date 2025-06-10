@@ -98,3 +98,31 @@ export const getUserBotMessages = asyncHandler(
     }
   }
 );
+
+export const deleteBotMessage = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, {}, "Unauthorized: User not found"));
+      }
+
+      // Delete all messages for this user
+      await db
+        .delete(botMessageTable)
+        .where(eq(botMessageTable.userId, userId));
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "All messages deleted successfully"));
+
+    } catch (error) {
+      console.error("Error deleting messages:", error);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal Server Error"));
+    }
+  }
+);
