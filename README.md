@@ -4,6 +4,7 @@ A modern, full-stack task management solution designed for companies to efficien
 
 ## 📑 Table of Contents
 - [Overview](#overview)
+- [Live Websites](#live-websites)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Quick Start Guide](#quick-start-guide)
@@ -12,6 +13,11 @@ A modern, full-stack task management solution designed for companies to efficien
 
 ## Overview
 The Company Task Management System is a comprehensive solution that helps organizations streamline their project management processes. It provides a centralized platform for managing employees, projects, and tasks with real-time updates and intuitive dashboards.
+
+## Live Websites
+Access our platform through the following links:
+- 🔐 **Admin Panel**: [https://admin.taskforges.com](https://admin.taskforges.com)
+- 👥 **Employee Workspace**: [https://workspace.taskforges.com](https://workspace.taskforges.com)
 
 ## Features
 - 👥 **User Management**
