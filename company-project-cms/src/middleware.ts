@@ -18,20 +18,41 @@ export function middleware(request: NextRequest) {
     return NextResponse.next(); // No session validation for these paths
   }
 
-  // Check for token in cookies
-  const token = request.cookies.get("accessToken")?.value || "";
+  // Check for token in cookies and Authorization header
+  const token = request.cookies.get("accessToken")?.value || 
+                request.headers.get("Authorization")?.replace("Bearer ", "") || "";
+
+  const response = NextResponse.next();
+
+  // Set cookie with cross-subdomain support if token exists but cookie doesn't
+  if (token && !request.cookies.get("accessToken")) {
+    response.cookies.set({
+      name: "accessToken",
+      value: token,
+      domain: ".taskforges.com", // Use root domain to enable sharing between subdomains
+      path: "/",
+      secure: true,
+      sameSite: "none",
+      httpOnly: true
+    });
+  }
 
   // Redirect to the login page if the token is invalid
   if (!token) {
     if (!pathname.startsWith("/sign-in")) {
       // Prevent redirect loop for /login
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+      const redirectResponse = NextResponse.redirect(new URL("/sign-in", request.url));
+      // Copy any existing cookies to the redirect response
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
     }
-    return NextResponse.next();
+    return response;
   }
 
   // Allow access if the token is valid
-  return NextResponse.next();
+  return response;
 }
 
 // Config to match specific paths for the middleware
