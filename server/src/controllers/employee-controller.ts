@@ -167,10 +167,12 @@ export const employeeLogin = asyncHandler(
 
       // Set the access token as a cookie
       res.cookie("accessToken", accessToken, {
-        httpOnly: true, // Prevent access from JavaScript
-        secure: true, // Ensure the cookie is sent only over HTTPS
+        httpOnly: true,
+        secure: true, // Ensure HTTPS
         maxAge: 24 * 60 * 60 * 1000, // 1 day
-        sameSite: "none", // Required for cross-origin cookies
+        sameSite: "none", // Required for cross-origin
+        domain: ".taskforges.com", // Add domain for cross-subdomain sharing
+        path: "/",
       });
 
       const loginUser = user[0];
