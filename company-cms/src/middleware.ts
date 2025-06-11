@@ -18,8 +18,25 @@ export function middleware(request: NextRequest) {
   // Allow API authentication endpoints without session validation
   const apiAuthPaths = ["/api/auth/", "/api/auth/**"];
 
-  // Check for token in cookies
-  const token = request.cookies.get("accessToken")?.value || "";
+  // Check for token in cookies with domain-aware handling
+  const token = request.cookies.get("accessToken")?.value || 
+                request.headers.get("Authorization")?.replace("Bearer ", "") || "";
+
+  const response = NextResponse.next();
+
+  // Set cookie domain to .taskforges.com to allow sharing between subdomains
+  if (token && !request.cookies.get("accessToken")) {
+    response.cookies.set({
+      name: "accessToken",
+      value: token,
+      domain: ".taskforges.com",
+      path: "/",
+      secure: true,
+      sameSite: "none",
+      httpOnly: true
+    });
+  }
+
   const isAuthenticated = !!token;
 
   // Check if the current path matches any of our public paths, including dynamic routes
@@ -40,20 +57,30 @@ export function middleware(request: NextRequest) {
       isAuthenticated &&
       authOnlyPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
     ) {
-      return NextResponse.redirect(new URL("/home", request.url));
+      const redirectResponse = NextResponse.redirect(new URL("/home", request.url));
+      // Copy cookies to redirect response
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
     }
     
-    return NextResponse.next(); // No further validation needed for public paths
+    return response;
   }
 
   // For private paths, check if user is authenticated
   if (!isAuthenticated) {
     // Redirect to login if no token found
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+    const redirectResponse = NextResponse.redirect(new URL("/sign-in", request.url));
+    // Copy cookies to redirect response
+    response.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie);
+    });
+    return redirectResponse;
   }
 
   // Allow access if the token is valid
-  return NextResponse.next();
+  return response;
 }
 
 // Config to match specific paths for the middleware
