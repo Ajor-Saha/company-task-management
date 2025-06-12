@@ -174,15 +174,20 @@ export const login = asyncHandler(
         .json(new ApiResponse(500, null, "Failed to generate token"));
     }
 
-    // Set the access token as a cookie
-    res.cookie("accessToken", accessToken, {
+    // Cookie options based on environment
+    const cookieOptions = {
       httpOnly: true,
-      secure: true, // Ensure HTTPS
+      secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000, // 1 day
-      sameSite: "none", // Required for cross-origin
-      domain: ".taskforges.com", // Add domain for cross-subdomain sharing
+      sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const,
+      ...(process.env.NODE_ENV === "production" && {
+        domain: ".taskforges.com",
+      }),
       path: "/"
-    });
+    };
+
+    // Set the access token as a cookie
+    res.cookie("accessToken", accessToken, cookieOptions);
 
     const loginUser = user[0];
 
@@ -204,11 +209,19 @@ export const logout = asyncHandler(
     if (!req.user) {
       return res.status(401).json(new ApiResponse(401, {}, "Unauthorized request"));
     }
-    res.clearCookie("accessToken", {
+
+    // Cookie clearing options based on environment
+    const cookieOptions = {
       httpOnly: true,
-      secure: false, // Set to true if using HTTPS in production
-      sameSite: "strict",
-    });
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const,
+      ...(process.env.NODE_ENV === "production" && {
+        domain: ".taskforges.com",
+      }),
+      path: "/"
+    };
+
+    res.clearCookie("accessToken", cookieOptions);
 
     return res.status(200).json(new ApiResponse(200, {}, "Logout successful"));
   } catch (error) {
