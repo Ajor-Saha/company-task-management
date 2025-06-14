@@ -16,14 +16,14 @@ export const editProjectFormSchema = z.object({
     }),
   startDate: z
     .string()
-    .min(1, "Start date is required")
-    .refine((val) => !isNaN(Date.parse(val)), {
+    .optional()
+    .refine((val) => !val || !isNaN(Date.parse(val)), {
       message: "Invalid start date",
     }),
   endDate: z
     .string()
-    .min(1, "End date is required")
-    .refine((val) => !isNaN(Date.parse(val)), {
+    .optional()
+    .refine((val) => !val || !isNaN(Date.parse(val)), {
       message: "Invalid end date",
     }),
 });

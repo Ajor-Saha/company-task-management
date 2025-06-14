@@ -78,6 +78,7 @@ interface Project {
   assignedEmployeeCount: number;
 }
 
+
 export default function ManageProject() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -179,10 +180,10 @@ export default function ManageProject() {
               </TableHead>
               <TableHead className="text-center">Assigned</TableHead>
               <TableHead className="hidden md:table-cell text-center">
-                Created
+                Start Date
               </TableHead>
               <TableHead className="hidden lg:table-cell text-center">
-                Deadline
+                End Date
               </TableHead>
               <TableHead className="text-center">Action</TableHead>
             </TableRow>
@@ -224,10 +225,10 @@ export default function ManageProject() {
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-center">
-                    {format(project.createdAt, "MMM dd, yyyy")}
+                    {project.startDate ? format(new Date(project.startDate), "MMM dd, yyyy") : 'N/A'}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-center">
-                    {format(project.updatedAt, "MMM dd, yyyy")}
+                    {project.endDate ? format(new Date(project.endDate), "MMM dd, yyyy") : 'N/A'}
                   </TableCell>
                   <TableCell className="text-center">
                     <DropdownMenu>
