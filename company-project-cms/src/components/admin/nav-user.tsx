@@ -21,6 +21,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
 
 
 export function NavUser({
@@ -34,7 +35,8 @@ export function NavUser({
   }
   onSignOut: () => void
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
+  const router = useRouter();
 
   return (
     <SidebarMenu>
@@ -75,8 +77,8 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
+            <DropdownMenuGroup className="cursor-pointer">
+              <DropdownMenuItem onClick={() => router.push("/settings/account-manage")}>
                 <BadgeCheck className="mr-2" />
                 Account
               </DropdownMenuItem>

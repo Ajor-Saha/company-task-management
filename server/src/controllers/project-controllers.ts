@@ -246,7 +246,7 @@ export const updateProject = asyncHandler(
 
       // Extract fields to update from the request body
       const { name, budget, startDate, endDate } = req.body;
-      if (!name && budget === undefined && !startDate && !endDate) {
+      if (!name && budget === undefined && startDate === undefined && endDate === undefined) {
         return res
           .status(400)
           .json(
@@ -262,13 +262,17 @@ export const updateProject = asyncHandler(
       const updateValues: {
         name?: string;
         budget?: number;
-        startDate?: Date;
-        endDate?: Date;
+        startDate?: Date | null;
+        endDate?: Date | null;
       } = {};
       if (name) updateValues.name = name;
       if (budget !== undefined) updateValues.budget = Number(budget);
-      if (startDate) updateValues.startDate = new Date(startDate);
-      if (endDate) updateValues.endDate = new Date(endDate);
+      if (startDate !== undefined) {
+        updateValues.startDate = startDate ? new Date(startDate) : null;
+      }
+      if (endDate !== undefined) {
+        updateValues.endDate = endDate ? new Date(endDate) : null;
+      }
 
       // Update the project where the project id and company id match
       const [updatedProject] = await db

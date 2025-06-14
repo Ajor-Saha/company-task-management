@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Axios } from "@/config/axios";
 import { env } from "@/config/env";
-
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,7 +22,6 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -79,8 +77,8 @@ export default function EditProjectDialog({
       form.reset({
         name: project.name,
         budget: project.budget.toString(),
-        startDate: project.startDate || "",
-        endDate: project.endDate || "",
+        startDate: project.startDate ? project.startDate.split('T')[0] : "",
+        endDate: project.endDate ? project.endDate.split('T')[0] : "",
       });
     }
   }, [project, form]);
@@ -89,12 +87,16 @@ export default function EditProjectDialog({
     if (!project) return;
     setIsSubmitting(true);
     try {
+      const updateData = {
+        name: data.name,
+        budget: Number(data.budget),
+        startDate: data.startDate || null,
+        endDate: data.endDate || null,
+      };
+
       const response = await Axios.put(
         `${env.BACKEND_BASE_URL}/api/project/update-project/${project.id}`,
-        {
-          ...data,
-          budget: Number(data.budget),
-        }
+        updateData
       );
 
       if (response.data?.success) {

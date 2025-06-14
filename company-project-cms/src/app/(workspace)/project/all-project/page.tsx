@@ -101,7 +101,7 @@ const AllProject: React.FC = () => {
                     {project.name}
                   </Link>
                 </CardTitle>
-                <DropdownMenu>
+                {/* <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="p-1">
                       <MoreHorizontal className="w-5 h-5" />
@@ -120,7 +120,7 @@ const AllProject: React.FC = () => {
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenu> */}
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm text-muted-foreground">

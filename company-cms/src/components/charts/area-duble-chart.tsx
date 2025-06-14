@@ -205,25 +205,25 @@ export function ChartAreaInteractive({ data, isLoading, timeframe }: ChartAreaIn
     })
   }, [chartData, timeRange])
 
-  if (isLoading) {
-    return (
-      <Card className="pt-0">
-        <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-          <div className="grid flex-1 gap-1">
-            <CardTitle>Project Statistics - Interactive</CardTitle>
-            <CardDescription>
-              Showing project data for {getTimeRangeLabel(timeRange)}
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-          <div className="flex justify-center items-center h-[250px]">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+  // if (isLoading) {
+  //   return (
+  //     <Card className="pt-0">
+  //       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+  //         <div className="grid flex-1 gap-1">
+  //           <CardTitle>Project Statistics - Interactive</CardTitle>
+  //           <CardDescription>
+  //             Showing project data for {getTimeRangeLabel(timeRange)}
+  //           </CardDescription>
+  //         </div>
+  //       </CardHeader>
+  //       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+  //         <div className="flex justify-center items-center h-[250px]">
+  //           <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+  //         </div>
+  //       </CardContent>
+  //     </Card>
+  //   )
+  // }
 
   return (
     <Card className="pt-0">

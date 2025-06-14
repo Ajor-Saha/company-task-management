@@ -19,6 +19,8 @@ Access our platform through the following links:
 - 🔐 **Admin Panel**: [https://admin.taskforges.com](https://admin.taskforges.com)
 - 👥 **Employee Workspace**: [https://workspace.taskforges.com](https://workspace.taskforges.com)
 
+**Note**: Currently under maintenance for bug fixes. You can still explore the features
+
 ## Features
 - 👥 **User Management**
   - Role-based access control (Admin, Senior Employee, Employee)
@@ -30,6 +32,7 @@ Access our platform through the following links:
   - Employee performance metrics
   - Financial analytics and reporting
   - Task completion statistics
+  - AI-driven performance feedback and insights
 
 - 📝 **Project Management**
   - Create and manage multiple projects
@@ -47,7 +50,9 @@ Access our platform through the following links:
   - Real-time messaging between team members
   - Project-specific discussion boards
   - create post - @mention project and employee
-  - File sharing capabilities
+  - AI chatbot support for streamlined workflow
+
+
 
 ## Tech Stack
 - **Frontend**: Next.js, TypeScript, Tailwind CSS

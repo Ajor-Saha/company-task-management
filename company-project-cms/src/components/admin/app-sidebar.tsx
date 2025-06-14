@@ -52,11 +52,11 @@ const sidebarData = {
       url: "/project",
       icon: <FolderKanban size={20} />,
       items: [
-        {
-          title: "Add Project",
-          url: "/project/add-project",
-          icon: <PlusCircle size={16} />,
-        },
+        // {
+        //   title: "Add Project",
+        //   url: "/project/add-project",
+        //   icon: <PlusCircle size={16} />,
+        // },
         {
           title: "All Project",
           url: "/project/all-project",
@@ -133,7 +133,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <GalleryVerticalEnd className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Company Cms</span>
+                  <span className="font-semibold">TaskForge</span>
                 </div>
               </Link>
             </SidebarMenuButton>

@@ -17,27 +17,25 @@ function Footer() {
             className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 md:mb-0"
             whileHover={{ scale: 1.1 }}
           >
-            <i>Company CMS</i>
+            <i>TaskForge</i>
           </motion.a>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
             {[
-              "For designers",
-              "Hire talent",
-              "Inspiration",
-              "Advertising",
-              "Blog",
-              "About",
-              "Careers",
-              "Support",
+              { text: "Projects", href: "#projects" },
+              { text: "Employee", href: "#employee" },
+              { text: "Stats", href: "#stats" },
+              { text: "Team", href: "#team" },
+              { text: "Testimonials", href: "#testimonials" },
+              { text: "Pricing", href: "#pricing" },
             ].map((item, index) => (
               <motion.a
                 key={index}
-                href="#"
+                href={item.href}
                 className="hover:text-gray-900 dark:hover:text-gray-100"
                 whileHover={{ scale: 1.1 }}
                 transition={{ duration: 0.2 }}
               >
-                {item}
+                {item.text}
               </motion.a>
             ))}
           </div>
@@ -63,7 +61,7 @@ function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
           <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-4 md:mb-0">
-            <span>&copy; 2025 Company CMS</span>
+            <span>&copy; 2025 TaskForge</span>
             {["Terms", "Privacy", "Cookies"].map((item, index) => (
               <motion.a
                 key={index}
@@ -77,12 +75,11 @@ function Footer() {
           </div>
           <nav className="flex flex-wrap justify-center md:justify-end gap-4">
             {[
-              "Jobs",
-              "Designers",
-              "Freelancers",
-              "Tags",
-              "Places",
-              "Resources",
+              "About",
+              "Contact",
+              "Privacy",
+              "Terms",
+              "Cookies",
             ].map((item, index) => (
               <motion.a
                 key={index}
