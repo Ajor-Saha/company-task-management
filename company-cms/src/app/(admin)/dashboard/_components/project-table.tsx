@@ -18,8 +18,8 @@ interface ProjectTableData {
   id: string;
   name: string;
   status: string;
-  employeeCount: number;
-  taskCount: number;
+  assignedEmployees: number;
+  totalTasks: number;
 }
 
 export function ProjectTable() {
@@ -75,6 +75,7 @@ export function ProjectTable() {
     );
   }
 
+  console.log(projects);
   return (
     <div className="overflow-auto">
       <Table>
@@ -106,7 +107,7 @@ export function ProjectTable() {
                 <div className="flex items-center justify-center gap-2">
                   <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   <span className="text-base font-medium">
-                    {project.employeeCount || 0}
+                    {project.assignedEmployees || 0}
                   </span>
                 </div>
               </TableCell>
@@ -114,7 +115,7 @@ export function ProjectTable() {
                 <div className="flex items-center justify-center gap-2">
                   <CheckSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   <span className="text-base font-medium">
-                    {project.taskCount || 0}
+                    {project.totalTasks || 0}
                   </span>
                 </div>
               </TableCell>

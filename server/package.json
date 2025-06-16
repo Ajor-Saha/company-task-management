@@ -4,6 +4,7 @@
   "description": "backend ",
   "main": "index.js",
   "scripts": {
+    "start": "nodemon --exec ts-node src/index.ts",
     "dev": "node --import=tsx --watch src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -27,9 +28,12 @@
     "morgan": "^1.10.0",
     "nanoid": "^5.1.5",
     "nodemailer": "^6.10.0",
+    "nodemon": "^3.1.10",
     "pg": "^8.13.3",
     "socket.io": "^4.8.1",
-    "uuid": "^11.0.5"
+    "ts-node": "^10.9.2",
+    "uuid": "^11.0.5",
+    "tsx": "^4.20.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -41,7 +45,7 @@
     "@types/morgan": "^1.9.9",
     "@types/nodemailer": "^6.4.17",
     "drizzle-kit": "^0.31.1",
-    "tsx": "^4.19.2",
+    "tsx": "^4.20.3",
     "typescript": "^5.7.3"
   }
 }
