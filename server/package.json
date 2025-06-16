@@ -4,6 +4,7 @@
   "description": "backend ",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
     "dev": "node --import=tsx --watch src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -31,8 +32,7 @@
     "pg": "^8.13.3",
     "socket.io": "^4.8.1",
     "ts-node": "^10.9.2",
-    "uuid": "^11.0.5",
-    "tsx": "^4.20.3"
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
