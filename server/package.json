@@ -4,7 +4,6 @@
   "description": "backend ",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec ts-node src/index.ts",
     "dev": "node --import=tsx --watch src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
