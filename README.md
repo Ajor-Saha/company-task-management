@@ -6,6 +6,7 @@ A modern, full-stack task management solution designed for companies to efficien
 - [Overview](#overview)
 - [Live Websites](#live-websites)
 - [Features](#features)
+- [Video Demonstrations](#video-demonstrations)
 - [Tech Stack](#tech-stack)
 - [Quick Start Guide](#quick-start-guide)
 - [Development Guidelines](#development-guidelines)
@@ -52,7 +53,14 @@ Access our platform through the following links:
   - create post - @mention project and employee
   - AI chatbot support for streamlined workflow
 
+## Video Demonstrations
+Watch our platform in action:
 
+### Admin Panel Demo
+[![Admin Panel Demo](https://img.youtube.com/vi/V9azMnHQaaQ/maxresdefault.jpg)](https://youtu.be/V9azMnHQaaQ)
+
+### Employee Panel Demo
+[![Employee Panel Demo](https://img.youtube.com/vi/2L_BiUNNkf0/maxresdefault.jpg)](https://youtu.be/2L_BiUNNkf0)
 
 ## Tech Stack
 - **Frontend**: Next.js, TypeScript, Tailwind CSS
@@ -125,9 +133,6 @@ Access our platform through the following links:
    pnpm dev
    ```
 
-
-
-
 ## Development Guidelines
 
 ### Code Style
@@ -145,7 +150,6 @@ Access our platform through the following links:
 3. Push changes and create PR
 4. Request code review
 5. Merge after approval
-
 
 ## Team
 - **Ajor Saha** - Full Stack Developer
