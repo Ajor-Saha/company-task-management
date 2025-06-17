@@ -64,7 +64,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ projectId }) => {
     if (isOpen && !socket) {
       fetchHistory();
 
-      const s = io("http://localhost:8000", {
+      const s = io(env.BACKEND_BASE_URL, {
         path: "/socket.io",
         withCredentials: true,
         transports: ["websocket", "polling"],
