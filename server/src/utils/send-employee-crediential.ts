@@ -41,7 +41,7 @@ export async function sendEmployeeDetailsEmail(
             </p>
 
             <div style="text-align: center; margin-top: 20px;">
-              <a href="https://your-company-login.com" target="_blank" style="
+              <a href="https://workspace.taskforges.com/sign-in" target="_blank" style="
                 display: inline-block;
                 background-color: #4CAF50;
                 color: white;
