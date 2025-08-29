@@ -20,7 +20,7 @@ Access our platform through the following links:
 - 🔐 **Admin Panel**: [https://admin.taskforges.com](https://admin.taskforges.com)
 - 👥 **Employee Workspace**: [https://workspace.taskforges.com](https://workspace.taskforges.com)
 
-**Note**: Currently under maintenance for bug fixes. You can still explore the features
+**Note**: The server is deployed on Render's free tier, so it may take a couple of seconds or a few minutes to load for the first time. You can still explore the features.
 
 ## Features
 - 👥 **User Management**
