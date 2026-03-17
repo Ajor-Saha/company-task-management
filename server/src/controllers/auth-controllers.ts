@@ -73,9 +73,9 @@ export const signup = asyncHandler(
       );
 
       if (!emailResponse.success) {
-        res
+        return res
           .status(500)
-          .json(new ApiResponse(500, {}, "Failed to send verification email"));
+          .json(new ApiResponse(500, {}, emailResponse.message || "Failed to send verification email"));
       } 
 
       return res
@@ -115,7 +115,7 @@ export const signup = asyncHandler(
     if (!emailResponse.success) {
       return res
         .status(500)
-        .json(new ApiResponse(500, {}, "Failed to send verification email"));
+        .json(new ApiResponse(500, {}, emailResponse.message || "Failed to send verification email"));
     } 
 
     return res
