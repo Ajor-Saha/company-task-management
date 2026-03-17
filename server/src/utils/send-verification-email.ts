@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import type Mail from "nodemailer/lib/mailer";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 
 const parseBoolean = (value: string | undefined, fallback: boolean) => {
     if (value === undefined) {
@@ -12,39 +14,110 @@ const parseNumber = (value: string | undefined, fallback: number) => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-export async function sendVerificationEmail(email: string, firstName: string, verifyCode: string) {
-    try {
-        const emailUser = process.env.EMAIL_USER;
-        const emailPass = process.env.EMAIL_PASS;
+let cachedTransporter: nodemailer.Transporter | null = null;
+let cachedTransportKey = "";
 
-        if (!emailUser || !emailPass) {
-            return { success: false, message: "EMAIL_USER or EMAIL_PASS is not configured" };
+const getBaseAuth = () => {
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS;
+
+    if (!emailUser || !emailPass) {
+        throw new Error("EMAIL_USER or EMAIL_PASS is not configured");
+    }
+
+    return { emailUser, emailPass };
+};
+
+const buildTransportOptions = (): SMTPTransport.Options[] => {
+    const { emailUser, emailPass } = getBaseAuth();
+    const host = process.env.SMTP_HOST || "smtp.gmail.com";
+    const envPort = process.env.SMTP_PORT;
+
+    // If user provides explicit SMTP port, use exactly that config.
+    if (envPort) {
+        const port = parseNumber(envPort, 587);
+        const secure = parseBoolean(process.env.SMTP_SECURE, port === 465);
+        return [
+            {
+                host,
+                port,
+                secure,
+                requireTLS: !secure,
+                auth: { user: emailUser, pass: emailPass },
+                connectionTimeout: 10000,
+                greetingTimeout: 10000,
+                socketTimeout: 12000,
+                dnsTimeout: 10000,
+                tls: { minVersion: "TLSv1.2" },
+            },
+        ];
+    }
+
+    // Gmail-friendly fallback order: STARTTLS on 587, then implicit TLS on 465.
+    return [
+        {
+            host,
+            port: 587,
+            secure: false,
+            requireTLS: true,
+            auth: { user: emailUser, pass: emailPass },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 12000,
+            dnsTimeout: 10000,
+            tls: { minVersion: "TLSv1.2" },
+        },
+        {
+            host,
+            port: 465,
+            secure: true,
+            auth: { user: emailUser, pass: emailPass },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 12000,
+            dnsTimeout: 10000,
+            tls: { minVersion: "TLSv1.2" },
+        },
+    ];
+};
+
+const getTransportKey = (options: SMTPTransport.Options) =>
+    `${options.host}:${options.port}:${options.secure}:${options.requireTLS}`;
+
+async function getVerifiedTransporter() {
+    const optionsList = buildTransportOptions();
+    let lastError: unknown;
+
+    for (const options of optionsList) {
+        const key = getTransportKey(options);
+        const isCachedMatch = cachedTransporter && cachedTransportKey === key;
+
+        if (!isCachedMatch) {
+            cachedTransporter = nodemailer.createTransport(options);
+            cachedTransportKey = key;
         }
 
-        const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
-        const smtpPort = parseNumber(process.env.SMTP_PORT, 587);
-        const smtpSecure = parseBoolean(process.env.SMTP_SECURE, smtpPort === 465);
+        try {
+            await cachedTransporter!.verify();
+            return cachedTransporter!;
+        } catch (error) {
+            lastError = error;
+            cachedTransporter = null;
+            cachedTransportKey = "";
+        }
+    }
 
-        const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpSecure,
-            requireTLS: !smtpSecure,
-            auth: {
-                user: emailUser,
-                pass: emailPass,
-            },
-            connectionTimeout: 12000,
-            greetingTimeout: 12000,
-            socketTimeout: 15000,
-            tls: {
-                minVersion: "TLSv1.2",
-            },
-        });
+    throw lastError instanceof Error
+        ? lastError
+        : new Error("SMTP verification failed for all configured transports");
+}
 
-        await transporter.verify();
+export async function sendVerificationEmail(email: string, firstName: string, verifyCode: string) {
+    try {
+        const { emailUser } = getBaseAuth();
+        const transporter = await getVerifiedTransporter();
 
-        const mailOptions = {
+        const mailOptions: Mail.Options = {
             from: process.env.MAIL_FROM || emailUser,
             to: email,
             subject: "Verify Your Account",
