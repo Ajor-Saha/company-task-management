@@ -1,19 +1,16 @@
 "use client";
-import { EyeOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CheckCircle2, EyeOff, ServerCog, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginSchema } from "@/schemas/auth-schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import axios, { AxiosError } from "axios";
-import { env } from "@/config/env";
+import { AxiosError } from "axios";
 import { toast } from "sonner";
 import {
   Form,
@@ -27,11 +24,84 @@ import { Loader2 } from "lucide-react";
 import { Axios } from "@/config/axios";
 import useAuthStore from "@/store/store";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverStatus, setServerStatus] = useState<"checking" | "waking" | "ready">(
+    "checking"
+  );
+  const [showStatusPopup, setShowStatusPopup] = useState(true);
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    let wakeTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      if (isMounted) {
+        setServerStatus("waking");
+      }
+    }, 2200);
+    let autoHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const checkServer = async () => {
+      try {
+        await Axios.get("/api/auth/server-status", { timeout: 12000 });
+        if (!isMounted) {
+          return;
+        }
+
+        setServerStatus("ready");
+        autoHideTimer = setTimeout(() => {
+          if (isMounted) {
+            setShowStatusPopup(false);
+          }
+        }, 1800);
+      } catch (error) {
+        // Retry once to tolerate temporary cold starts or TLS handshake hiccups.
+        try {
+          await sleep(1200);
+          await Axios.get("/api/auth/server-status", { timeout: 12000 });
+          if (!isMounted) {
+            return;
+          }
+
+          setServerStatus("ready");
+          autoHideTimer = setTimeout(() => {
+            if (isMounted) {
+              setShowStatusPopup(false);
+            }
+          }, 1800);
+        } catch {
+          if (!isMounted) {
+            return;
+          }
+
+          // Fail silently and allow normal sign-in flow without showing warning errors.
+          setServerStatus("ready");
+          setShowStatusPopup(false);
+        }
+      } finally {
+        if (wakeTimer) {
+          clearTimeout(wakeTimer);
+          wakeTimer = null;
+        }
+      }
+    };
+
+    checkServer();
+
+    return () => {
+      isMounted = false;
+      if (wakeTimer) {
+        clearTimeout(wakeTimer);
+      }
+      if (autoHideTimer) {
+        clearTimeout(autoHideTimer);
+      }
+    };
+  }, []);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -42,19 +112,25 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
+    if (serverStatus === "checking" || serverStatus === "waking") {
+      setShowStatusPopup(true);
+      toast.info("Server is starting. Please wait a moment.");
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
-      const response = await Axios.post(
-        `${env.BACKEND_BASE_URL}/api/auth/signin`,
-        data
-      );
+      const response = await Axios.post("/api/auth/signin", data);
       toast.success(response.data.message || "Login Successful");
       // console.log("Login Successful:", response.data);
       login(response.data.data, response.data.accessToken);
 
       router.push("/dashboard"); // Redirect to the dashboard after login
     } catch (error) {
-      console.error("Login Error:", error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Login Error:", error);
+      }
       const axiosError = error as AxiosError<{ message: string }>;
       const errorMessage =
         axiosError.response?.data.message ?? "Invalid credentials. Try again.";
@@ -64,8 +140,68 @@ export default function LoginPage() {
     }
   };
 
+  const isServerBusy = serverStatus === "checking" || serverStatus === "waking";
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center  p-6 md:p-10">
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-6 md:p-10">
+      {showStatusPopup && (
+        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+          <div
+            style={{ animation: "statusPopIn 300ms ease-out" }}
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-blue-100 bg-white/95 shadow-2xl backdrop-blur"
+          >
+            <div className="relative bg-gradient-to-r from-sky-50 via-white to-blue-50 px-4 py-4">
+              <button
+                type="button"
+                onClick={() => setShowStatusPopup(false)}
+                className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground transition hover:bg-black/5 hover:text-foreground"
+                aria-label="Close status popup"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="flex items-start gap-3">
+                <div
+                  className={`mt-0.5 rounded-full p-2 ${
+                    serverStatus === "ready"
+                      ? "bg-emerald-100 text-emerald-600"
+                      : "bg-blue-100 text-blue-600"
+                  }`}
+                >
+                  {serverStatus === "ready" ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <ServerCog className="h-4 w-4 animate-spin" />
+                  )}
+                </div>
+
+                <div className="space-y-1 pr-6">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {serverStatus === "checking" && "Checking Server Status"}
+                    {serverStatus === "waking" && "Server Is Waking Up"}
+                    {serverStatus === "ready" && "Server Is Ready"}
+                  </p>
+                  <p className="text-xs leading-relaxed text-slate-600">
+                    {serverStatus === "checking" &&
+                      "Connecting to the backend now. This helps avoid a slow first login."}
+                    {serverStatus === "waking" &&
+                      "Your Render free instance is starting. It can take up to a couple of minutes."}
+                    {serverStatus === "ready" &&
+                      "Great news. The backend responded and you can sign in now."}
+                  </p>
+
+                  {(serverStatus === "checking" || serverStatus === "waking") && (
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-blue-100">
+                      <div className="h-full w-1/3 animate-pulse rounded-full bg-blue-500" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-sm md:max-w-3xl">
         <div className="flex flex-col gap-6">
           <Card className="overflow-hidden">
@@ -142,7 +278,7 @@ export default function LoginPage() {
 
                       <Button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isServerBusy}
                         className="w-full"
                       >
                         {isSubmitting ? (
@@ -150,6 +286,8 @@ export default function LoginPage() {
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Please wait
                           </>
+                        ) : isServerBusy ? (
+                          "Starting server..."
                         ) : (
                           "Sign In"
                         )}
@@ -157,7 +295,7 @@ export default function LoginPage() {
                     </form>
                   </Form>
                 </div>
-                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+                {/* <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
                   <span className="relative z-10 bg-background px-2 text-muted-foreground">
                     Or continue with
                   </span>
@@ -172,7 +310,7 @@ export default function LoginPage() {
                     </svg>
                     <span className="sr-only">Login with Google</span>
                   </Button>
-                </div>
+                </div> */}
                 <div className="text-center text-sm">
                   Don&apos;t have an account?{" "}
                   <Link
@@ -202,6 +340,19 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes statusPopIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }

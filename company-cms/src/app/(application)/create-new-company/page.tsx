@@ -17,7 +17,8 @@ import type { ApiResponse } from "@/types/api-success-type"
 
 function CreateCompanyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [company, setCompany] = useState({})
+  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [redirectMessage, setRedirectMessage] = useState("Preparing your signup workspace...")
   const router = useRouter()
 
   const form = useForm<z.infer<typeof createCompanySchema>>({
@@ -40,10 +41,25 @@ function CreateCompanyPage() {
     try {
       const response = await axios.post(`${env.BACKEND_BASE_URL}/api/company/add-new-company`, data)
       toast.success(response.data.message || "Company created successfully!")
-      const company = response.data.data
+      const company = response.data.data as { id?: string }
+
       if (response.data.success) {
-        setCompany(company)
-        router.push(`/signup/${company.id}`)
+        if (!company?.id) {
+          toast.error("Company created, but signup link is missing. Please try again.")
+          return
+        }
+
+        const signupPath = `/signup/${company.id}`
+        setIsRedirecting(true)
+
+        // Warm up the route before redirect to reduce perceived delay on production.
+        router.prefetch(signupPath)
+
+        setTimeout(() => {
+          setRedirectMessage("Redirecting to signup page...")
+        }, 1200)
+
+        router.push(signupPath)
       }
     } catch (error) {
       console.error("Error during company creation:", error)
@@ -52,12 +68,33 @@ function CreateCompanyPage() {
         axiosError.response?.data.message ?? "There was a problem creating your company. Please try again."
       toast.error(errorMessage)
     } finally {
-      setIsSubmitting(false)
+      if (!isRedirecting) {
+        setIsSubmitting(false)
+      }
     }
   }
 
   return (
     <div className="min-h-screen  flex flex-col items-center justify-center p-4 font-sans">
+      {isRedirecting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
+          <div className="w-[92%] max-w-md rounded-2xl border border-white/40 bg-white p-6 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-violet-100 p-3 text-violet-600">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-slate-900">Company Created Successfully</h3>
+                <p className="mt-1 text-sm text-slate-600">{redirectMessage}</p>
+                <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-violet-100">
+                  <div className="h-full w-1/3 animate-pulse rounded-full bg-violet-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-4xl p-8 bg-white/80 dark:bg-slate-700/40 backdrop-blur-sm rounded-3xl shadow-xl border border-purple-100 dark:border-slate-600">
         <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-300 mb-8 text-center">Create a Company</h2>
 
@@ -185,14 +222,16 @@ function CreateCompanyPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isRedirecting}
               className="w-full cursor-pointer mt-8 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl py-4 font-medium text-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Please wait
+                  Creating company...
                 </>
+              ) : isRedirecting ? (
+                "Redirecting..."
               ) : (
                 "Create Company"
               )}

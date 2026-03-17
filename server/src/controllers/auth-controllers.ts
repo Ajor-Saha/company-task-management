@@ -15,6 +15,8 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { nanoid } from "nanoid";
 import fs from 'fs/promises';
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const signup = asyncHandler(
   async (req: Request, res: Response) => {
   try {
@@ -482,6 +484,32 @@ export const resetPassword = asyncHandler(
     }
   }
 );
+
+export const getServerStatus = asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    if (!isProduction) {
+      await sleep(3000);
+    }
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          status: "ok",
+          environment: process.env.NODE_ENV || "development",
+          delayed: !isProduction,
+          timestamp: new Date().toISOString(),
+        },
+        "Server is reachable"
+      )
+    );
+  } catch (error) {
+    console.error("Error checking server status:", error);
+    return res.status(500).json(new ApiResponse(500, {}, "Failed to check server status"));
+  }
+});
 
 export const updateUserProfile = asyncHandler(
   async (req: Request, res: Response) => {
