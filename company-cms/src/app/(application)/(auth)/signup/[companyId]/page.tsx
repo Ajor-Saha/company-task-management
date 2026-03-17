@@ -24,6 +24,7 @@ import { env } from "@/config/env";
 
 export default function SignUpPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
   const params = useParams<{ companyId: string }>();
 
@@ -45,10 +46,16 @@ export default function SignUpPage() {
         `${env.BACKEND_BASE_URL}/api/auth/signup`,
         data
       );
-      toast.success(
-        response.data.message || "Sign Up Successful. Please verify your email."
-      );
-      router.push(`/verify/${data.email}`);
+      toast.success(response.data.message || "Sign up successful", {
+        description:
+          "We sent a verification code to your email. Please check your Inbox and Spam/Junk folder.",
+        duration: 6000,
+      });
+
+      setIsRedirecting(true);
+      setTimeout(() => {
+        router.push(`/verify/${data.email}`);
+      }, 900);
     } catch (error) {
       console.error("Error during sign-up:", error);
       const axiosError = error as AxiosError<{ message: string }>;
@@ -57,12 +64,35 @@ export default function SignUpPage() {
         "There was a problem with your sign-up. Please try again.";
       toast.error(errorMessage);
     } finally {
-      setIsSubmitting(false);
+      if (!isRedirecting) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
+      {isRedirecting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
+          <div className="w-[92%] max-w-md rounded-2xl border border-white/40 bg-white p-6 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-blue-100 p-3 text-blue-600">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-slate-900">Verify Your Email</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  We sent a verification code. Please check your Inbox and Spam/Junk folder.
+                </p>
+                <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-blue-100">
+                  <div className="h-full w-1/3 animate-pulse rounded-full bg-blue-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-4xl shadow-lg rounded-lg p-8">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Left Section */}
@@ -144,12 +174,14 @@ export default function SignUpPage() {
                   )}
                 />
 
-                <Button type="submit" disabled={isSubmitting} className="w-full">
+                <Button type="submit" disabled={isSubmitting || isRedirecting} className="w-full">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Please wait
                     </>
+                  ) : isRedirecting ? (
+                    "Redirecting to verification..."
                   ) : (
                     "Sign Up"
                   )}
