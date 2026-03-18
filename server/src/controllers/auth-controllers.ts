@@ -46,7 +46,7 @@ export const signup = asyncHandler(
 
       // If the user is already verified, return an error
       if (user.isVerified) {
-        res
+        return res
           .status(400)
           .json(
             new ApiResponse(400, {}, "User already exists with this email")
