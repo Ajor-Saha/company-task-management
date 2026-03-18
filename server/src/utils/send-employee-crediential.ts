@@ -1,4 +1,6 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmployeeDetailsEmail(
   email: string,
@@ -6,19 +8,21 @@ export async function sendEmployeeDetailsEmail(
   password: string,
   companyName: string
 ) {
-  try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER, // Your email
-        pass: process.env.EMAIL_PASS, // Your email password or app password
-      },
-    });
+  if (!process.env.RESEND_API_KEY) {
+    return { success: false, message: "RESEND_API_KEY is not configured" };
+  }
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: `🎉 Welcome to ${companyName}! Your Account Details`,
+  const from = process.env.RESEND_FROM;
+  if (!from) {
+    return { success: false, message: "RESEND_FROM is not configured" };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from,
+      to: [email],
+      subject: `Welcome to ${companyName}! Your Account Details`,
+      text: `Hello ${firstName},\n\nYou have been added as an employee at ${companyName}.\n\nEmail: ${email}\nPassword: ${password}\n\nPlease sign in and change your password for security reasons.\n\nSign in: https://workspace.taskforges.com/sign-in`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <div style="text-align: center; background-color: #4CAF50; padding: 15px; border-radius: 10px 10px 0 0;">
@@ -59,12 +63,19 @@ export async function sendEmployeeDetailsEmail(
           </div>
         </div>
       `,
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, message: `Email sent: ${info.response}` };
-  } catch (error) {
-    console.error("Error sending email:", error);
-    return { success: false, message: "Failed to send email" };
+    if (error) {
+      console.error("Resend employee email error:", error);
+      return { success: false, message: error.message || "Failed to send email" };
+    }
+
+    return { success: true, message: `Email sent: ${data?.id}` };
+  } catch (networkError) {
+    console.error("Resend employee email network error:", networkError);
+    return {
+      success: false,
+      message: networkError instanceof Error ? networkError.message : "Failed to send email",
+    };
   }
 }

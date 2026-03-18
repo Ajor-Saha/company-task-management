@@ -46,7 +46,7 @@ export const signup = asyncHandler(
 
       // If the user is already verified, return an error
       if (user.isVerified) {
-        res
+        return res
           .status(400)
           .json(
             new ApiResponse(400, {}, "User already exists with this email")
@@ -73,9 +73,9 @@ export const signup = asyncHandler(
       );
 
       if (!emailResponse.success) {
-        res
+        return res
           .status(500)
-          .json(new ApiResponse(500, {}, "Failed to send verification email"));
+          .json(new ApiResponse(500, {}, emailResponse.message || "Failed to send verification email"));
       } 
 
       return res
@@ -115,7 +115,7 @@ export const signup = asyncHandler(
     if (!emailResponse.success) {
       return res
         .status(500)
-        .json(new ApiResponse(500, {}, "Failed to send verification email"));
+        .json(new ApiResponse(500, {}, emailResponse.message || "Failed to send verification email"));
     } 
 
     return res
